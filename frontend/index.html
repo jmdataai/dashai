@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DashAI — AI Dashboard Builder</title>
+  <meta name="description" content="Upload any CSV or XLSX. AI generates a professional, interactive dashboard in seconds.">
+
+  <!-- Fonts & Styles -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Libraries (CDN) -->
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <!--
+    DEPLOYMENT: Set your HuggingFace backend URL here before pushing to Netlify/Vercel.
+    Example: <script>window.DASHAI_API = "https://your-name-dashai.hf.space";</script>
+  -->
+  <script>window.DASHAI_API = window.DASHAI_API || "http://localhost:8000";</script>
+
+  <style>
+    /* Page-level overrides */
+    #page-upload { display: flex; }
+  </style>
+</head>
+
+<body>
+
+<!-- ========================================================
+     UPLOAD / LANDING PAGE
+     ======================================================== -->
+<div id="page-upload">
+
+  <!-- Nav -->
+  <nav class="nav">
+    <a class="nav-logo" href="#">
+      <div class="nav-logo-mark">📊</div>
+      <span class="nav-logo-name">DashAI</span>
+      <span class="nav-logo-tag">v1.0</span>
+    </a>
+    <div class="nav-right">
+      <div class="nav-pill" id="ai-status">
+        <span class="pill-dot"></span>
+        <span class="pill-text">Checking AI…</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span>✦</span> AI-Powered · No Login · Instant Export
+    </div>
+    <h1 class="hero-h1">
+      Turn Any Spreadsheet Into a<br>
+      <span>Professional Dashboard</span>
+    </h1>
+    <p class="hero-sub">
+      Upload a CSV or Excel file. Our AI analyzes your data, picks the right charts,
+      and builds an interactive executive dashboard — in under 10 seconds.
+    </p>
+
+    <!-- Upload card -->
+    <div class="upload-card">
+
+      <!-- File info (shown after upload) -->
+      <div class="file-info" id="file-info">
+        <span class="fi-icon">📄</span>
+        <div>
+          <div class="fi-name"></div>
+          <div class="fi-meta">
+            <span class="fi-tag">— rows</span>
+            <span class="fi-tag">— cols</span>
+            <span class="fi-tag">— KB</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status / error -->
+      <div class="status-row" id="status-row">
+        <div class="spin"></div>
+        <span class="st-msg">Loading…</span>
+      </div>
+      <div class="err-row" id="err-row"></div>
+
+      <!-- Column chips (shown after profile) -->
+      <div class="col-chips" id="col-chips"></div>
+
+      <!-- Drop zone -->
+      <div class="dropzone" id="dropzone">
+        <span class="dz-icon">☁</span>
+        <div class="dz-title">Drag & drop your CSV or Excel file</div>
+        <div class="dz-sub">Supports .csv, .xlsx, .xls — up to ~100K rows</div>
+      </div>
+      <input type="file" id="file-input" accept=".csv,.xlsx,.xls" style="display:none">
+
+      <!-- Divider -->
+      <div class="upload-divider">or</div>
+
+      <!-- Generate button -->
+      <button class="btn-primary" id="gen-btn" disabled onclick="doGenerate()">
+        ✦ Generate Dashboard
+      </button>
+
+      <!-- Demo button -->
+      <button class="btn-outline" onclick="loadDemo()">
+        ⚡ Load Demo Dataset (Sales · 144 rows)
+      </button>
+
+    </div>
+
+    <!-- Features strip -->
+    <div class="features">
+      <div class="feature"><span>🤖</span> Groq + Gemini AI</div>
+      <div class="feature"><span>📊</span> 8+ chart types</div>
+      <div class="feature"><span>▶</span> Animated charts</div>
+      <div class="feature"><span>💾</span> Export HTML &amp; PNG</div>
+      <div class="feature"><span>🔒</span> Data stays in browser</div>
+    </div>
+  </section>
+
+</div><!-- /#page-upload -->
+
+
+<!-- ========================================================
+     DASHBOARD PAGE
+     ======================================================== -->
+<div id="page-dashboard">
+
+  <!-- Generating overlay -->
+  <div id="gen-overlay">
+    <div class="gen-ring"></div>
+    <div class="gen-msg" id="gen-msg-text">Analyzing your data…</div>
+    <div class="gen-sub">AI is designing your personalized dashboard</div>
+    <div class="gen-steps">
+      <div class="gen-dot"></div>
+      <div class="gen-dot"></div>
+      <div class="gen-dot"></div>
+      <div class="gen-dot"></div>
+      <div class="gen-dot"></div>
+    </div>
+  </div>
+
+  <!-- Dashboard Nav -->
+  <nav class="dash-nav">
+    <div class="dash-nav-left">
+      <button class="back-btn" onclick="goBack()">← Back</button>
+      <div class="dash-title-nav" id="dash-title-nav">Dashboard</div>
+      <span class="dash-file-tag" id="dash-file-tag"></span>
+    </div>
+    <div class="dash-nav-right">
+      <button class="icon-btn" onclick="doGenerate()">🔄 Regenerate</button>
+      <button class="icon-btn" onclick="doExportHTML()">🌐 Export HTML</button>
+      <button class="icon-btn accent" onclick="doExportPNG()">🖼 Export PNG</button>
+    </div>
+  </nav>
+
+  <!-- Dashboard canvas (filled by JS) -->
+  <div class="dash-canvas" id="dash-canvas"></div>
+
+</div><!-- /#page-dashboard -->
+
+<!-- Main script -->
+<script src="main.js"></script>
+
+</body>
+</html>
