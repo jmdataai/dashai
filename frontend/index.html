@@ -4,106 +4,56 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DashAI — Instant Data Dashboards</title>
-  <meta name="description" content="Upload any spreadsheet. Get a professional interactive dashboard in seconds.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <link rel="stylesheet" href="style.css">
-  <!-- Set your HuggingFace Space URL here before deploying to Vercel -->
-  <!-- Example: <script>window.DASHAI_API = "https://yourname-dashai.hf.space";</script> -->
-  <script>window.DASHAI_API = window.DASHAI_API || "http://localhost:8000";</script>
-  <script>window.DASHAI_API = "https://freddy-jmdataai-dashai.hf.space";</script>
+  <!-- Set your HuggingFace Space URL here -->
+  <script>window.DASHAI_API = window.DASHAI_API || "http://localhost:7860";</script>
 </head>
 <body>
 
-<!-- ===== LANDING PAGE ===== -->
+<!-- ===== UPLOAD PAGE ===== -->
 <div id="page-upload">
   <nav class="nav">
     <a class="nav-logo" href="#">
-      <div class="nav-mark">
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-          <rect x="1" y="7" width="3" height="7" rx="1" fill="white" opacity=".85"/>
-          <rect x="6" y="4" width="3" height="10" rx="1" fill="white"/>
-          <rect x="11" y="1" width="3" height="13" rx="1" fill="white" opacity=".65"/>
-        </svg>
-      </div>
+      <div class="nav-mark"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1" y="7" width="3" height="7" rx="1" fill="white" opacity=".85"/><rect x="6" y="4" width="3" height="10" rx="1" fill="white"/><rect x="11" y="1" width="3" height="13" rx="1" fill="white" opacity=".65"/></svg></div>
       <span class="nav-name">DashAI</span>
     </a>
-    <div class="ai-pill" id="ai-status">
-      <span class="ai-dot"></span>
-      <span class="ai-txt">Connecting…</span>
-    </div>
+    <div class="ai-pill" id="ai-status"><span class="ai-dot"></span><span class="ai-txt">Connecting…</span></div>
   </nav>
 
   <main class="hero">
     <h1 class="hero-h1">Turn Any Spreadsheet Into a<br><em>Professional Dashboard</em></h1>
-    <p class="hero-p">Upload a CSV or Excel file. AI analyzes your data, picks the best charts, and delivers a fully interactive executive dashboard — in under 10 seconds.</p>
-
+    <p class="hero-p">Upload a CSV or Excel file. AI analyzes your data, picks the best charts, and delivers a fully interactive executive dashboard.</p>
     <div class="card" id="upload-card">
-      <!-- File info (after upload) -->
-      <div class="file-row" id="file-row">
-        <span class="file-ico">📄</span>
-        <div>
-          <div class="file-nm" id="file-nm"></div>
-          <div class="file-tags">
-            <span class="ftag" id="ft-rows"></span>
-            <span class="ftag" id="ft-cols"></span>
-            <span class="ftag" id="ft-size"></span>
-          </div>
-        </div>
-      </div>
-      <!-- Col chips -->
+      <div class="file-row" id="file-row"><span class="file-ico">📄</span><div><div class="file-nm" id="file-nm"></div><div class="file-tags"><span class="ftag" id="ft-rows"></span><span class="ftag" id="ft-cols"></span></div></div></div>
       <div class="col-chips" id="col-chips"></div>
-      <!-- Status/Error -->
       <div class="st-bar" id="st-bar"><div class="st-spin"></div><span id="st-txt"></span></div>
       <div class="err-bar" id="err-bar"></div>
-      <!-- Drop zone -->
-      <div class="dz" id="dropzone">
-        <div class="dz-cloud">☁</div>
-        <div class="dz-title">Drag &amp; drop your CSV or Excel file</div>
-        <div class="dz-sub">Supports .csv · .xlsx · .xls</div>
-      </div>
+      <div class="dz" id="dropzone"><div class="dz-cloud">☁</div><div class="dz-title">Drag &amp; drop your CSV or Excel file</div><div class="dz-sub">Supports .csv · .xlsx · .xls</div></div>
       <input type="file" id="file-input" accept=".csv,.xlsx,.xls" style="display:none">
       <div class="or-divider"><span>or</span></div>
       <button class="btn-primary" id="gen-btn" disabled onclick="doGenerate()">✦ &nbsp;Generate Dashboard</button>
-      <button class="btn-ghost" onclick="loadDemo()">Try with sample dataset</button>
+      <button class="btn-ghost" onclick="loadSample('sales')">Try with sample dataset</button>
     </div>
   </main>
 </div>
 
 <!-- ===== DASHBOARD PAGE ===== -->
 <div id="page-dashboard">
-  <!-- Generating overlay -->
-  <div id="gen-overlay">
-    <div class="gen-glow"></div>
-    <div class="gen-ring"></div>
-    <div class="gen-label" id="gen-label">Analyzing your data…</div>
-    <div class="gen-hint">Building your dashboard</div>
-    <div class="gen-dots">
-      <span class="gd"></span><span class="gd"></span><span class="gd"></span><span class="gd"></span><span class="gd"></span>
-    </div>
-  </div>
-
-  <!-- Top bar -->
+  <div id="gen-overlay"><div class="gen-glow"></div><div class="gen-ring"></div><div class="gen-label" id="gen-label">Analyzing your data…</div><div class="gen-hint">Building your dashboard</div></div>
   <header class="topbar">
     <div class="tb-left">
-      <button class="tb-back" onclick="goBack()">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8 2.5L4 6.5l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Back
-      </button>
+      <button class="tb-back" onclick="goBack()">← Back</button>
       <span class="tb-title" id="tb-title">Dashboard</span>
       <span class="tb-badge" id="tb-badge"></span>
     </div>
     <div class="tb-right">
-      <button class="tb-btn" onclick="doGenerate()">↺ &nbsp;Regenerate</button>
-      <button class="tb-btn" onclick="doExportHTML()">⬇ &nbsp;HTML</button>
-      <button class="tb-btn hi" onclick="doExportPNG()">⬇ &nbsp;PNG</button>
+      <button class="tb-btn" onclick="doGenerate()">↺ Regenerate</button>
+      <button class="tb-btn" onclick="doExportPNG()">⬇ PNG</button>
     </div>
   </header>
-
-  <!-- Canvas filled by JS -->
   <div class="dash-canvas" id="dash-canvas"></div>
 </div>
 
