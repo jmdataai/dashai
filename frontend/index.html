@@ -3,170 +3,110 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DashAI — AI Dashboard Builder</title>
-  <meta name="description" content="Upload any CSV or XLSX. AI generates a professional, interactive dashboard in seconds.">
-
-  <!-- Fonts & Styles -->
+  <title>DashAI — Instant Data Dashboards</title>
+  <meta name="description" content="Upload any spreadsheet. Get a professional interactive dashboard in seconds.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-
-  <!-- Libraries (CDN) -->
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-  <!--
-    DEPLOYMENT: Set your HuggingFace backend URL here before pushing to Netlify/Vercel.
-    Example: <script>window.DASHAI_API = "https://your-name-dashai.hf.space";</script>
-  -->
-  <!-- <script>window.DASHAI_API = window.DASHAI_API || "http://localhost:8000";</script> -->
-  <script>window.DASHAI_API = "https://-dashai.hf.space";</script>
-
-  <style>
-    /* Page-level overrides */
-    #page-upload { display: flex; }
-  </style>
+  <link rel="stylesheet" href="style.css">
+  <!-- Set your HuggingFace Space URL here before deploying to Vercel -->
+  <!-- Example: <script>window.DASHAI_API = "https://yourname-dashai.hf.space";</script> -->
+  <script>window.DASHAI_API = window.DASHAI_API || "http://localhost:8000";</script>
+  <script>window.DASHAI_API = "https://freddy-jmdataai-dashai.hf.space";</script>
 </head>
-
 <body>
 
-<!-- ========================================================
-     UPLOAD / LANDING PAGE
-     ======================================================== -->
+<!-- ===== LANDING PAGE ===== -->
 <div id="page-upload">
-
-  <!-- Nav -->
   <nav class="nav">
     <a class="nav-logo" href="#">
-      <div class="nav-logo-mark">📊</div>
-      <span class="nav-logo-name">DashAI</span>
-      <span class="nav-logo-tag">v1.0</span>
-    </a>
-    <div class="nav-right">
-      <div class="nav-pill" id="ai-status">
-        <span class="pill-dot"></span>
-        <span class="pill-text">Checking AI…</span>
+      <div class="nav-mark">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <rect x="1" y="7" width="3" height="7" rx="1" fill="white" opacity=".85"/>
+          <rect x="6" y="4" width="3" height="10" rx="1" fill="white"/>
+          <rect x="11" y="1" width="3" height="13" rx="1" fill="white" opacity=".65"/>
+        </svg>
       </div>
+      <span class="nav-name">DashAI</span>
+    </a>
+    <div class="ai-pill" id="ai-status">
+      <span class="ai-dot"></span>
+      <span class="ai-txt">Connecting…</span>
     </div>
   </nav>
 
-  <!-- Hero -->
-  <section class="hero">
-    <div class="hero-eyebrow">
-      <span>✦</span> AI-Powered · No Login · Instant Export
-    </div>
-    <h1 class="hero-h1">
-      Turn Any Spreadsheet Into a<br>
-      <span>Professional Dashboard</span>
-    </h1>
-    <p class="hero-sub">
-      Upload a CSV or Excel file. Our AI analyzes your data, picks the right charts,
-      and builds an interactive executive dashboard — in under 10 seconds.
-    </p>
+  <main class="hero">
+    <h1 class="hero-h1">Turn Any Spreadsheet Into a<br><em>Professional Dashboard</em></h1>
+    <p class="hero-p">Upload a CSV or Excel file. AI analyzes your data, picks the best charts, and delivers a fully interactive executive dashboard — in under 10 seconds.</p>
 
-    <!-- Upload card -->
-    <div class="upload-card">
-
-      <!-- File info (shown after upload) -->
-      <div class="file-info" id="file-info">
-        <span class="fi-icon">📄</span>
+    <div class="card" id="upload-card">
+      <!-- File info (after upload) -->
+      <div class="file-row" id="file-row">
+        <span class="file-ico">📄</span>
         <div>
-          <div class="fi-name"></div>
-          <div class="fi-meta">
-            <span class="fi-tag">— rows</span>
-            <span class="fi-tag">— cols</span>
-            <span class="fi-tag">— KB</span>
+          <div class="file-nm" id="file-nm"></div>
+          <div class="file-tags">
+            <span class="ftag" id="ft-rows"></span>
+            <span class="ftag" id="ft-cols"></span>
+            <span class="ftag" id="ft-size"></span>
           </div>
         </div>
       </div>
-
-      <!-- Status / error -->
-      <div class="status-row" id="status-row">
-        <div class="spin"></div>
-        <span class="st-msg">Loading…</span>
-      </div>
-      <div class="err-row" id="err-row"></div>
-
-      <!-- Column chips (shown after profile) -->
+      <!-- Col chips -->
       <div class="col-chips" id="col-chips"></div>
-
+      <!-- Status/Error -->
+      <div class="st-bar" id="st-bar"><div class="st-spin"></div><span id="st-txt"></span></div>
+      <div class="err-bar" id="err-bar"></div>
       <!-- Drop zone -->
-      <div class="dropzone" id="dropzone">
-        <span class="dz-icon">☁</span>
-        <div class="dz-title">Drag & drop your CSV or Excel file</div>
-        <div class="dz-sub">Supports .csv, .xlsx, .xls — up to ~100K rows</div>
+      <div class="dz" id="dropzone">
+        <div class="dz-cloud">☁</div>
+        <div class="dz-title">Drag &amp; drop your CSV or Excel file</div>
+        <div class="dz-sub">Supports .csv · .xlsx · .xls</div>
       </div>
       <input type="file" id="file-input" accept=".csv,.xlsx,.xls" style="display:none">
-
-      <!-- Divider -->
-      <div class="upload-divider">or</div>
-
-      <!-- Generate button -->
-      <button class="btn-primary" id="gen-btn" disabled onclick="doGenerate()">
-        ✦ Generate Dashboard
-      </button>
-
-      <!-- Demo button -->
-      <button class="btn-outline" onclick="loadDemo()">
-        ⚡ Load Demo Dataset (Sales · 144 rows)
-      </button>
-
+      <div class="or-divider"><span>or</span></div>
+      <button class="btn-primary" id="gen-btn" disabled onclick="doGenerate()">✦ &nbsp;Generate Dashboard</button>
+      <button class="btn-ghost" onclick="loadDemo()">Try with sample dataset</button>
     </div>
+  </main>
+</div>
 
-    <!-- Features strip -->
-    <div class="features">
-      <div class="feature"><span>🤖</span> Groq + Gemini AI</div>
-      <div class="feature"><span>📊</span> 8+ chart types</div>
-      <div class="feature"><span>▶</span> Animated charts</div>
-      <div class="feature"><span>💾</span> Export HTML &amp; PNG</div>
-      <div class="feature"><span>🔒</span> Data stays in browser</div>
-    </div>
-  </section>
-
-</div><!-- /#page-upload -->
-
-
-<!-- ========================================================
-     DASHBOARD PAGE
-     ======================================================== -->
+<!-- ===== DASHBOARD PAGE ===== -->
 <div id="page-dashboard">
-
   <!-- Generating overlay -->
   <div id="gen-overlay">
+    <div class="gen-glow"></div>
     <div class="gen-ring"></div>
-    <div class="gen-msg" id="gen-msg-text">Analyzing your data…</div>
-    <div class="gen-sub">AI is designing your personalized dashboard</div>
-    <div class="gen-steps">
-      <div class="gen-dot"></div>
-      <div class="gen-dot"></div>
-      <div class="gen-dot"></div>
-      <div class="gen-dot"></div>
-      <div class="gen-dot"></div>
+    <div class="gen-label" id="gen-label">Analyzing your data…</div>
+    <div class="gen-hint">Building your dashboard</div>
+    <div class="gen-dots">
+      <span class="gd"></span><span class="gd"></span><span class="gd"></span><span class="gd"></span><span class="gd"></span>
     </div>
   </div>
 
-  <!-- Dashboard Nav -->
-  <nav class="dash-nav">
-    <div class="dash-nav-left">
-      <button class="back-btn" onclick="goBack()">← Back</button>
-      <div class="dash-title-nav" id="dash-title-nav">Dashboard</div>
-      <span class="dash-file-tag" id="dash-file-tag"></span>
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="tb-left">
+      <button class="tb-back" onclick="goBack()">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8 2.5L4 6.5l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back
+      </button>
+      <span class="tb-title" id="tb-title">Dashboard</span>
+      <span class="tb-badge" id="tb-badge"></span>
     </div>
-    <div class="dash-nav-right">
-      <button class="icon-btn" onclick="doGenerate()">🔄 Regenerate</button>
-      <button class="icon-btn" onclick="doExportHTML()">🌐 Export HTML</button>
-      <button class="icon-btn accent" onclick="doExportPNG()">🖼 Export PNG</button>
+    <div class="tb-right">
+      <button class="tb-btn" onclick="doGenerate()">↺ &nbsp;Regenerate</button>
+      <button class="tb-btn" onclick="doExportHTML()">⬇ &nbsp;HTML</button>
+      <button class="tb-btn hi" onclick="doExportPNG()">⬇ &nbsp;PNG</button>
     </div>
-  </nav>
+  </header>
 
-  <!-- Dashboard canvas (filled by JS) -->
+  <!-- Canvas filled by JS -->
   <div class="dash-canvas" id="dash-canvas"></div>
+</div>
 
-</div><!-- /#page-dashboard -->
-
-<!-- Main script -->
 <script src="main.js"></script>
-
 </body>
 </html>
