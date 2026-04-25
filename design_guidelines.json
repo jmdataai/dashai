@@ -1,0 +1,97 @@
+{
+  "theme": "dark",
+  "archetype": "Archetype 4 (Swiss & High-Contrast) + Data-Viz Neon accents",
+  "identity_note": "Premium Geckoboard-style dashboard. High data density, massive typography for KPIs, obsidian backgrounds with neon accent charts. Avoids default AI slop. Serious, investor-ready aesthetic.",
+  "typography": {
+    "primary_font": {
+      "name": "Cabinet Grotesk",
+      "usage": "Headlines, KPI numbers, Empty state hero text, Main navigation items.",
+      "import_url": "https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,500,700,400,900&display=swap",
+      "font_family": "'Cabinet Grotesk', sans-serif"
+    },
+    "secondary_font": {
+      "name": "IBM Plex Sans",
+      "usage": "Body, table data, axis labels, small buttons, UI text.",
+      "import_url": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap",
+      "font_family": "'IBM Plex Sans', sans-serif"
+    }
+  },
+  "colors": {
+    "background": {
+      "app_void": "#04070D",
+      "sidebar": "#090E17",
+      "card_surface": "#0E1420",
+      "card_hover": "#131C2C"
+    },
+    "text": {
+      "primary": "#F8FAFC",
+      "secondary": "#94A3B8",
+      "muted": "#475569"
+    },
+    "borders": {
+      "structural": "#1A2333",
+      "interactive": "#2DD4BF"
+    },
+    "accents": {
+      "primary_cta": "#2DD4BF",
+      "chart_1_cyan": "#00E5FF",
+      "chart_2_magenta": "#FF007F",
+      "chart_3_yellow": "#E0FF00",
+      "chart_4_green": "#00FF66",
+      "chart_5_orange": "#FF4500"
+    }
+  },
+  "spacing_and_layout": {
+    "strategy": "The 'Control Room' Grid (Mode B). Ultra-dense but legible. Left sidebar + massive right scrollable view.",
+    "sidebar_width": "w-80 2xl:w-96",
+    "dashboard_grid": "grid-cols-1 md:grid-cols-3 xl:grid-cols-4 lg:gap-6 gap-4",
+    "container_padding": "p-6 lg:p-10",
+    "card_padding": "p-6"
+  },
+  "components": {
+    "cards": {
+      "style": "bg-[#0E1420] border border-[#1A2333] rounded-xl shadow-none. Must feel like milled tactile panels, not floating cards.",
+      "hover_state": "hover:bg-[#131C2C] hover:border-[#2DD4BF]/30 transition-all duration-300"
+    },
+    "buttons": {
+      "primary_cta": "bg-[#2DD4BF]/10 border border-[#2DD4BF] text-[#2DD4BF] hover:bg-[#2DD4BF] hover:text-[#04070D] font-bold tracking-wide uppercase text-sm px-6 py-3 rounded-lg transition-colors shadow-[0_0_15px_rgba(45,212,191,0.2)]",
+      "secondary": "bg-[#090E17] border border-[#1A2333] hover:border-[#F8FAFC]/50 text-[#F8FAFC] px-4 py-2 rounded-lg transition-all text-sm",
+      "export_buttons": "Flex row, small outline buttons in the header. Use lucide-react icons for Download (PNG) and Code (HTML)."
+    },
+    "file_upload_zone": {
+      "style": "Dashed 2px border border-[#1A2333] rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer hover:border-[#2DD4BF] hover:bg-[#2DD4BF]/5 transition-all bg-[#04070D]/50 relative group",
+      "text": "text-[#94A3B8] group-hover:text-[#2DD4BF] transition-colors"
+    },
+    "kpi_widget": {
+      "typography": "text-5xl lg:text-6xl font-black font-['Cabinet_Grotesk'] tracking-tighter text-white",
+      "label": "text-sm tracking-[0.2em] uppercase text-[#94A3B8] font-['IBM_Plex_Sans'] mb-2 block"
+    }
+  },
+  "charts": {
+    "library": "react-plotly.js",
+    "theme_rules": "MUST use 'plotly_dark' template. Overwrite Plotly's default background colors: paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'. Grid lines must be 'rgba(255,255,255,0.05)'. Chart traces must use the exact hex colors from colors.accents."
+  },
+  "empty_state": {
+    "layout": "Asymmetric bento grid layout. Left-aligned huge display text (Cabinet Grotesk). Large image on the right acting as visual anchor.",
+    "background_image": "https://images.pexels.com/photos/27141316/pexels-photo-27141316.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+  },
+  "icons": {
+    "library": "lucide-react",
+    "stroke_width": "1.5"
+  },
+  "testing": {
+    "rules": "All interactive elements MUST have data-testid attributes for E2E testing. e.g., data-testid='upload-zone', data-testid='generate-btn', data-testid='export-html-btn'."
+  },
+  "instructions_to_main_agent": [
+    "Load Cabinet Grotesk (Primary/Headlines) and IBM Plex Sans (Body/UI) via web fonts in index.css.",
+    "Implement a Split-View Layout: Fixed Left Sidebar for upload/controls, Scrollable Right View for the dashboard.",
+    "Sidebar should contain: Brand Logo, Theme Toggle, Drag-Drop File Upload Zone, File Metadata display, 'Generate Dashboard' primary CTA, 'Regenerate' secondary CTA.",
+    "Main View Header should contain: Dynamic AI Title + Subtitle, and prominent Export buttons (HTML & PNG) on the right edge.",
+    "KPI Widgets: Use the 'kpi_widget' component style. The numbers must be massive (text-5xl or 6xl) to mimic the Geckoboard aesthetic. Add Framer Motion count-up effect if possible.",
+    "Charts: Strictly use react-plotly.js. Ensure the charts map to the dark, borderless card styles perfectly. Remove default Plotly white backgrounds entirely by setting 'paper_bgcolor' and 'plot_bgcolor' to transparent.",
+    "Layout Grid: Use the 'Control Room' grid strategy. Use col-span utilities (e.g., col-span-2) to make the primary hero chart span larger than secondary charts.",
+    "Interactivity: When a file is uploaded, show a sleek loading state (using ASCII loader or elegant Framer Motion spinner) before rendering the final Plotly dashboard.",
+    "Avoid the center-everything disease. Left-align text inputs and KPI text.",
+    "Do NOT use generic purple/mint tech gradients. Stick strictly to the dark obsidian void background with sharp neon graph traces."
+  ]
+}
