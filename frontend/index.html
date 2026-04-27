@@ -3,113 +3,164 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>DashAI — Instant Data Dashboards</title>
+  <title>DashAI — Enterprise Analytics</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
   <link rel="stylesheet" href="style.css">
-  <!-- !! Replace with your HuggingFace Space URL before deploying !! -->
-  <!-- Example: <script>window.DASHAI_API = "https://yourname-dashai.hf.space";</script> -->
-  <!-- <script>window.DASHAI_API = window.DASHAI_API || "http://localhost:7860";</script> -->
-  <script>window.DASHAI_API = "https://freddy-jmdataai-dashai.hf.space";</script>
+  <script>window.DASHAI_API = window.DASHAI_API || "http://localhost:7860";</script>
 </head>
 <body>
 
-<!-- ===== UPLOAD / LANDING ===== -->
+<!-- ═══════════ UPLOAD / LANDING ═══════════ -->
 <div id="page-upload">
-  <nav class="nav">
-    <a class="nav-logo" href="#">
-      <div class="nav-mark"><svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1" y="7" width="3" height="7" rx="1" fill="white" opacity=".85"/><rect x="6" y="4" width="3" height="10" rx="1" fill="white"/><rect x="11" y="1" width="3" height="13" rx="1" fill="white" opacity=".65"/></svg></div>
-      <span class="nav-name">DashAI</span>
-    </a>
-    <div class="ai-pill" id="ai-status"><span class="ai-dot"></span><span class="ai-txt">Connecting…</span></div>
+  <div class="landing-bg">
+    <div class="mesh m1"></div>
+    <div class="mesh m2"></div>
+    <div class="mesh m3"></div>
+  </div>
+
+  <nav class="land-nav">
+    <div class="brand">
+      <div class="brand-mark"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="8" width="3" height="7" rx="1" fill="white" opacity=".85"/><rect x="6.5" y="4" width="3" height="11" rx="1" fill="white"/><rect x="12" y="1" width="3" height="14" rx="1" fill="white" opacity=".7"/></svg></div>
+      <span class="brand-name">Dash<span class="brand-ai">AI</span></span>
+    </div>
+    <div class="land-status" id="ai-status"><span class="status-dot"></span><span class="status-txt">Connecting…</span></div>
   </nav>
 
-  <main class="hero">
-    <div class="hero-eyebrow">AI-Powered Analytics</div>
-    <h1 class="hero-h1">Transform Any Spreadsheet<br>Into a <em>Live Dashboard</em></h1>
-    <p class="hero-p">Upload your data. Our AI understands your columns, selects the most impactful charts, and renders a fully interactive dashboard in seconds.</p>
+  <main class="land-hero">
+    <div class="hero-badge">Enterprise Analytics Platform</div>
+    <h1 class="hero-title">Your Data.<br><span class="hero-em">Instant Intelligence.</span></h1>
+    <p class="hero-desc">Upload any dataset. Our AI engine profiles every column, selects the optimal visualizations, and assembles a boardroom-ready analytics dashboard — automatically.</p>
 
-    <div class="upload-card" id="upload-card">
-      <div class="file-row" id="file-row">
-        <div class="file-ico-wrap"><svg width="18" height="22" viewBox="0 0 18 22" fill="none"><path d="M10 1H3a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7L10 1z" stroke="#5b6ef5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 1v6h6" stroke="#5b6ef5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div>
-          <div class="file-nm" id="file-nm"></div>
-          <div class="file-tags">
-            <span class="ftag" id="ft-rows"></span>
-            <span class="ftag" id="ft-cols"></span>
+    <div class="upload-panel">
+      <div class="upload-inner">
+        <div class="file-info" id="file-info">
+          <div class="fi-icon"><svg width="20" height="24" viewBox="0 0 20 24" fill="none"><path d="M12 1H4a3 3 0 0 0-3 3v16a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3V8l-7-7z" stroke="currentColor" stroke-width="1.5"/><path d="M12 1v7h7" stroke="currentColor" stroke-width="1.5"/></svg></div>
+          <div><div class="fi-name" id="fi-name"></div><div class="fi-tags"><span class="fi-tag" id="fi-rows"></span><span class="fi-tag" id="fi-cols"></span></div></div>
+        </div>
+
+        <div class="col-chips" id="col-chips"></div>
+        <div class="st-row" id="st-row"><div class="spin-sm"></div><span id="st-msg"></span></div>
+        <div class="err-row" id="err-row"></div>
+
+        <label class="drop-area" id="drop-area">
+          <input type="file" id="file-input" accept=".csv,.xlsx,.xls" hidden>
+          <div class="drop-icon">
+            <svg width="44" height="44" viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="21" stroke="currentColor" stroke-width="1" stroke-dasharray="4 4" opacity=".25"/><path d="M22 30V14M16 20l6-6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
-        </div>
-      </div>
-      <div class="col-chips" id="col-chips"></div>
-      <div class="st-bar" id="st-bar"><div class="st-spin"></div><span id="st-txt"></span></div>
-      <div class="err-bar" id="err-bar"></div>
+          <div class="drop-label">Drop CSV or Excel file</div>
+          <div class="drop-hint">.csv · .xlsx · .xls · up to 25 MB</div>
+        </label>
 
-      <div class="dz" id="dropzone">
-        <div class="dz-icon">
-          <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="19" stroke="currentColor" stroke-width="1" stroke-dasharray="4 3" opacity=".3"/><path d="M20 27V13M14 19l6-6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-        <div class="dz-title">Drop your CSV or Excel file here</div>
-        <div class="dz-sub">Supports .csv · .xlsx · .xls · up to 25 MB</div>
+        <div class="sep"><span>or</span></div>
+        <button class="btn-gen" id="gen-btn" disabled onclick="doGenerate()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1v4M8 11v4M1 8h4M11 8h4M3.8 3.8l2.8 2.8M9.4 9.4l2.8 2.8M3.8 12.2l2.8-2.8M9.4 6.6l2.8-2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Generate Dashboard
+        </button>
+        <button class="btn-sample" onclick="loadSample('sales')">Try with sample data →</button>
       </div>
-      <input type="file" id="file-input" accept=".csv,.xlsx,.xls" style="display:none">
-
-      <div class="or-sep"><span>or</span></div>
-      <button class="btn-primary" id="gen-btn" disabled onclick="doGenerate()">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v3M7 10v3M1 7h3M10 7h3M3.22 3.22l2.12 2.12M8.66 8.66l2.12 2.12M3.22 10.78l2.12-2.12M8.66 5.34l2.12-2.12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        Generate Dashboard
-      </button>
-      <button class="btn-ghost" onclick="loadSample('sales')">Try with sample data →</button>
     </div>
   </main>
 </div>
 
-<!-- ===== DASHBOARD ===== -->
-<div id="page-dashboard">
-  <!-- Generating overlay -->
+<!-- ═══════════ DASHBOARD ═══════════ -->
+<div id="page-dash">
+  <!-- Loading overlay -->
   <div id="gen-overlay">
-    <div class="gen-bg"></div>
-    <div class="gen-orb orb1"></div>
-    <div class="gen-orb orb2"></div>
-    <div class="gen-content">
-      <div class="gen-ring"></div>
-      <div class="gen-label" id="gen-label">Analyzing columns…</div>
-      <div class="gen-hint">AI is building your dashboard</div>
-      <div class="gen-progress"><div class="gen-bar" id="gen-bar"></div></div>
+    <div class="gen-bg-layer"></div>
+    <div class="gen-center">
+      <div class="gen-orbit">
+        <div class="gen-ring"></div>
+        <div class="gen-ring r2"></div>
+      </div>
+      <div class="gen-text" id="gen-text">Analyzing dataset…</div>
+      <div class="gen-sub">Building your enterprise dashboard</div>
+      <div class="gen-track"><div class="gen-fill" id="gen-fill"></div></div>
     </div>
   </div>
 
-  <!-- Top bar -->
-  <header class="topbar">
-    <div class="tb-left">
-      <button class="tb-back" onclick="goBack()">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2.5L4 7l5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Back
-      </button>
-      <div class="tb-sep"></div>
-      <div class="tb-file" id="tb-file">
-        <svg width="13" height="15" viewBox="0 0 13 15" fill="none" opacity=".5"><path d="M7 1H2a1.5 1.5 0 0 0-1.5 1.5v11A1.5 1.5 0 0 0 2 15h9a1.5 1.5 0 0 0 1.5-1.5V5.5L7 1z" stroke="currentColor" stroke-width="1.2"/><path d="M7 1v4.5H11.5" stroke="currentColor" stroke-width="1.2"/></svg>
-        <span id="tb-title">Dashboard</span>
-      </div>
-    </div>
-    <div class="tb-right">
-      <button class="tb-btn" onclick="doGenerate()">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 6A4 4 0 1 1 6 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M6 2h3v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Regenerate
-      </button>
-      <button class="tb-btn" onclick="doExportHTML()" id="export-html-btn">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3 6l3 3 3-3M1 10h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Export HTML
-      </button>
-      <button class="tb-btn accent" onclick="doExportPNG()">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x=".5" y=".5" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.2"/><circle cx="4" cy="4" r=".8" fill="currentColor"/><path d="M.5 7.5l3-3 2 2 2-2.5 4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Export PNG
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand">
+      <div class="brand-mark sm"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="8" width="3" height="7" rx="1" fill="white" opacity=".85"/><rect x="6.5" y="4" width="3" height="11" rx="1" fill="white"/><rect x="12" y="1" width="3" height="14" rx="1" fill="white" opacity=".7"/></svg></div>
+      <span class="sb-name">DashAI</span>
+      <button class="sb-toggle" onclick="toggleSidebar()" title="Toggle sidebar">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       </button>
     </div>
-  </header>
 
-  <!-- Dashboard canvas -->
-  <div class="dash-canvas" id="dash-canvas"></div>
+    <nav class="sb-nav">
+      <button class="sb-item active" data-tab="overview" onclick="switchTab('overview',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/></svg>
+        <span>Overview</span>
+      </button>
+      <button class="sb-item" data-tab="charts" onclick="switchTab('charts',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="8" width="3" height="7" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="6.5" y="4" width="3" height="11" rx="1" stroke="currentColor" stroke-width="1.3"/><rect x="11" y="1" width="3" height="14" rx="1" stroke="currentColor" stroke-width="1.3"/></svg>
+        <span>Charts</span>
+      </button>
+      <button class="sb-item" data-tab="data" onclick="switchTab('data',this)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <span>Data</span>
+      </button>
+    </nav>
+
+    <div class="sb-file" id="sb-file">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8 1H3a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V5L8 1z" stroke="currentColor" stroke-width="1.2"/></svg>
+      <span id="sb-filename"></span>
+    </div>
+
+    <div class="sb-bottom">
+      <button class="sb-action" onclick="doGenerate()" title="Regenerate">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M12 7A5 5 0 1 1 7 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M7 2h3.5v3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Regenerate</span>
+      </button>
+      <button class="sb-action" onclick="doExportHTML()" id="btn-export-html" title="Export HTML">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v8M4 7l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span>Export HTML</span>
+      </button>
+      <button class="sb-action" onclick="doExportPNG()" title="Export PNG">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="1.5" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.2"/><circle cx="5" cy="5" r="1" fill="currentColor"/><path d="M1.5 9l3-3 2.5 2.5L9.5 5.5l3 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Export PNG</span>
+      </button>
+      <button class="sb-action back-btn" onclick="goBack()" title="New upload">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 3L5 7l4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>New Upload</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="main-content" id="main-content">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="tb-left">
+        <div class="tb-breadcrumb">
+          <span class="tb-bc-item">DashAI</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2.5l3 3.5-3 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="tb-bc-active" id="tb-filename">Dashboard</span>
+        </div>
+      </div>
+      <div class="tb-right">
+        <div class="tb-time" id="tb-time"></div>
+      </div>
+    </header>
+
+    <!-- Tab: Overview -->
+    <div class="tab-panel active" id="tab-overview">
+      <div class="canvas" id="overview-canvas"></div>
+    </div>
+
+    <!-- Tab: Charts (all charts full-width) -->
+    <div class="tab-panel" id="tab-charts">
+      <div class="canvas" id="charts-canvas"></div>
+    </div>
+
+    <!-- Tab: Data table -->
+    <div class="tab-panel" id="tab-data">
+      <div class="canvas" id="data-canvas"></div>
+    </div>
+  </div>
 </div>
 
 <script src="main.js"></script>

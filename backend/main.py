@@ -14,7 +14,7 @@ from fastapi.responses import HTMLResponse
 from starlette.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from figure_builder import build_chart, compute_kpi, format_kpi_value, PALETTE
+from figure_builder import build_chart, build_chart_with_fallback, compute_kpi, format_kpi_value, PALETTE
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("dashai")
@@ -140,10 +140,11 @@ Output STRICT JSON only — no markdown, no commentary.
      "format": "number|currency|percent"}
   ],
   "charts": [
-    {"id": "hero", "type": "bar|line|area|scatter|pie|donut|histogram|box|heatmap|treemap",
+    {"id": "hero", "type": "bar|line|area|scatter|pie|donut|histogram|box|heatmap|treemap|scatter3d|surface3d|animated_bar|animated_scatter",
      "x": "col or null", "y": "col or null",
      "color": "col or null", "z": "col or null",
      "agg": "sum|mean|count|none",
+     "animation_frame": "col or null",
      "title": "Chart title", "subtitle": "Caption",
      "span": 2}
   ]
@@ -154,8 +155,15 @@ Rules:
 - ONE hero chart (id="hero", span=2). Then 3-5 supporting charts (span=1). Max 6 charts total.
 - VARY chart types. If datetime col has many unique dates → line/area. Category+numeric → bar.
   Proportions → donut. Distributions → histogram/box. Two categories → heatmap.
+- 3D CHARTS (use sparingly — only when it adds value):
+  scatter3d: ONLY when 3+ numeric columns exist. Set x, y, z to three different numeric cols. color can be a categorical col.
+  surface3d: ONLY when 2 categorical + 1 numeric exist. x=cat1, y=cat2, z=numeric. Shows a 3D surface of aggregated values.
+- ANIMATED CHARTS (use ONE at most — only when a clear ordering column exists):
+  animated_bar: Set animation_frame to a categorical/datetime col with 3-20 unique values. Shows how bar values change across frames.
+  animated_scatter: Set animation_frame same way. Shows dots moving across frames.
 - Only use columns listed in the schema — exact names, case-sensitive.
-- KPI format: "currency" for money/revenue, "percent" for rates, "number" otherwise."""
+- KPI format: "currency" for money/revenue, "percent" for rates, "number" otherwise.
+- Do NOT force 3D or animation. Use them ONLY when data clearly supports it."""
 
 def _build_prompt(profile: dict) -> str:
     lines = []
@@ -285,6 +293,27 @@ def _fallback_plan(profile: dict, seed: int) -> dict:
     if len(cat) >= 2 and num and len(charts) < 6:
         charts.append({"type":"heatmap","x":cat[0]["name"],"y":cat[1]["name"],"z":num[0]["name"],"agg":"mean","span":1,
                         "title":f"{num[0]['name'].replace('_',' ').title()} Matrix"})
+
+    # 3D scatter when 3+ numeric columns exist
+    if len(num) >= 3 and len(charts) < 7:
+        charts.append({"type":"scatter3d","x":num[0]["name"],"y":num[1]["name"],"z":num[2]["name"],
+                        "color":cat[0]["name"] if cat else None,"agg":"none","span":1,
+                        "title":f"3D: {num[0]['name'].replace('_',' ')} × {num[1]['name'].replace('_',' ')} × {num[2]['name'].replace('_',' ')}",
+                        "subtitle":"Interactive — drag to rotate"})
+
+    # 3D surface when 2 categoricals + numeric
+    if len(cat) >= 2 and num and len(charts) < 7:
+        charts.append({"type":"surface3d","x":cat[0]["name"],"y":cat[1]["name"],"z":num[0]["name"],"agg":"mean","span":1,
+                        "title":f"3D Surface: {num[0]['name'].replace('_',' ').title()}",
+                        "subtitle":"Mean values across two dimensions"})
+
+    # Animated bar when there's a categorical with 3-15 values to animate over
+    anim_col = next((c for c in cat if 3 <= c["n_unique"] <= 15 and c["name"] != (cat[0]["name"] if cat else "")), None)
+    if anim_col and cat and num and len(charts) < 7:
+        charts.append({"type":"animated_bar","x":cat[0]["name"],"y":num[0]["name"],
+                        "animation_frame":anim_col["name"],"agg":"mean","span":2,
+                        "title":f"{num[0]['name'].replace('_',' ').title()} — Animated by {anim_col['name'].replace('_',' ').title()}",
+                        "subtitle":"Press ▶ to play the animation"})
 
     fname = profile.get("filename","Dataset").rsplit(".",1)[0].replace("_"," ").title()
     return {
@@ -423,7 +452,23 @@ Object.entries(FIGS).forEach(([id, fig])=>{{
   const el = document.getElementById(id);
   if(!el || !fig) return;
   const layout = Object.assign({{}}, BASE_LAYOUT, fig.layout || {{}}, {{autosize:true}});
-  Plotly.newPlot(el, fig.data || [], layout, {{responsive:true,displayModeBar:true,displaylogo:false}});
+  // Handle 3D scene backgrounds
+  const is3D = (fig.data||[]).some(t=>["scatter3d","surface","mesh3d"].includes(t.type));
+  if(is3D){{
+    const sa={{backgroundcolor:"rgba(6,10,20,0.95)",gridcolor:"rgba(255,255,255,0.06)",color:"#607090",showbackground:true}};
+    layout.scene=Object.assign({{}},layout.scene||{{}},{{bgcolor:"rgba(6,10,20,0.95)",xaxis:sa,yaxis:sa,zaxis:sa}});
+    el.style.height="480px";
+  }}
+  // Handle animation frames
+  if(fig.frames&&fig.frames.length){{
+    layout.margin=Object.assign({{}},layout.margin,{{b:80}});
+    el.style.height="480px";
+    Plotly.newPlot(el,fig.data||[],layout,{{responsive:true,displayModeBar:true,displaylogo:false}}).then(()=>{{
+      Plotly.addFrames(el,fig.frames);
+    }});
+  }}else{{
+    Plotly.newPlot(el,fig.data||[],layout,{{responsive:true,displayModeBar:true,displaylogo:false}});
+  }}
 }});
 </script>
 </body>
@@ -486,19 +531,19 @@ async def generate(dataset_id: str, body: GenReq | None = None):
             kpi["formatted_value"] = format_kpi_value(kpi["value"], kpi["format"])
             kpis.append(kpi)
 
-    # Charts
+    # Charts — use fallback chain so every slot is filled
     charts = []
     for i, spec in enumerate(plan.get("charts") or []):
-        refs = [spec.get(k) for k in ("x","y","z","color") if spec.get(k)]
+        refs = [spec.get(k) for k in ("x","y","z","color","animation_frame") if spec.get(k)]
         if not all(r in valid_cols for r in refs):
             logger.warning(f"Skipping chart '{spec.get('type')}' — bad cols {refs}")
             continue
-        fig = build_chart(spec, df)
+        fig, actual_type = build_chart_with_fallback(spec, df)
         if not fig:
-            continue
+            continue          # all fallbacks exhausted — truly nothing to show
         charts.append({
             "id":       spec.get("id") or f"c{i}",
-            "type":     spec.get("type","bar"),
+            "type":     actual_type,              # actual type rendered (may be fallback)
             "title":    spec.get("title","Chart"),
             "subtitle": spec.get("subtitle"),
             "span":     int(spec.get("span",1)),
@@ -508,9 +553,9 @@ async def generate(dataset_id: str, body: GenReq | None = None):
     if not charts:
         fb = _fallback_plan(profile, seed)
         for spec in fb["charts"]:
-            fig = build_chart(spec, df)
+            fig, actual_type = build_chart_with_fallback(spec, df)
             if fig:
-                charts.append({"id":spec.get("id","c"),"type":spec.get("type","bar"),
+                charts.append({"id":spec.get("id","c"),"type":actual_type,
                                "title":spec.get("title","Chart"),"subtitle":spec.get("subtitle"),
                                "span":int(spec.get("span",1)),"figure":fig})
 
