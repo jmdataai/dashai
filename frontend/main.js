@@ -2,6 +2,33 @@
 const API = window.DASHAI_API || "http://localhost:7860";
 const S = { did:null, dash:null, file:"", profile:null, genTimer:null };
 
+// ── Theme toggle ──────────────────────────────────────────────
+const T = { mode: 'dark' };
+
+function toggleTheme() {
+  T.mode = T.mode === 'dark' ? 'light' : 'dark';
+  applyTheme();
+}
+
+function applyTheme() {
+  const isDark = T.mode === 'dark';
+  document.body.classList.toggle('light', !isDark);
+  const icon  = isDark ? '🌙' : '☀️';
+  const label = isDark ? 'Dark' : 'Light';
+  ['land','dash'].forEach(id => {
+    const i = document.getElementById('theme-icon-' + id);
+    const l = document.getElementById('theme-label-' + id);
+    if (i) i.textContent = icon;
+    if (l) l.textContent = label;
+  });
+  // Re-apply Plotly chart themes after switch
+  setTimeout(() => {
+    document.querySelectorAll('[id^="plt-"]').forEach(div => {
+      try { Plotly.Plots.resize(div); } catch {}
+    });
+  }, 200);
+}
+
 // ── Boot ──
 document.addEventListener("DOMContentLoaded", () => {
   checkHealth();

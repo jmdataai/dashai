@@ -26,7 +26,13 @@
       <div class="brand-mark"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="8" width="3" height="7" rx="1" fill="white" opacity=".85"/><rect x="6.5" y="4" width="3" height="11" rx="1" fill="white"/><rect x="12" y="1" width="3" height="14" rx="1" fill="white" opacity=".7"/></svg></div>
       <span class="brand-name">Dash<span class="brand-ai">AI</span></span>
     </div>
-    <div class="land-status" id="ai-status"><span class="status-dot"></span><span class="status-txt">Connecting…</span></div>
+    <div class="nav-right-group">
+      <button class="theme-btn" id="theme-btn-land" onclick="toggleTheme()">
+        <span class="theme-icon" id="theme-icon-land">🌙</span>
+        <span id="theme-label-land">Dark</span>
+      </button>
+      <div class="land-status" id="ai-status"><span class="status-dot"></span><span class="status-txt">Connecting…</span></div>
+    </div>
   </nav>
 
   <main class="land-hero">
@@ -143,6 +149,10 @@
         </div>
       </div>
       <div class="tb-right">
+        <button class="theme-btn" id="theme-btn-dash" onclick="toggleTheme()">
+          <span class="theme-icon" id="theme-icon-dash">🌙</span>
+          <span id="theme-label-dash">Dark</span>
+        </button>
         <div class="tb-time" id="tb-time"></div>
       </div>
     </header>
