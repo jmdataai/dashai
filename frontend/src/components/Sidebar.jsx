@@ -1,7 +1,7 @@
 import React from 'react';
 import useStore from '../store';
 import { toast } from '../toast';
-import { apiGenerate, apiExportHtml } from '../api';
+import { apiExportHtml } from '../api';
 import { downloadBlob } from '../utils';
 
 const TABS = [
@@ -23,7 +23,7 @@ const TABS = [
 ];
 
 export default function Sidebar({ onRegenerate }) {
-  const { activeTab, setActiveTab, sidebarCollapsed, toggleSidebar, file, dash, did, setDash, setGenerating, goToLanding } = useStore();
+  const { activeTab, setActiveTab, sidebarCollapsed, toggleSidebar, file, dash, goToLanding } = useStore();
 
   const exportHTML = async () => {
     if (!dash) return;
@@ -38,19 +38,35 @@ export default function Sidebar({ onRegenerate }) {
     const charts = dash?.charts || [];
     if (!charts.length) { toast.warn('Generate a dashboard first'); return; }
     const base = (dash?.title || 'chart').replace(/\W+/g, '_');
+
+    // Try both Overview (plt-0..N) and Charts tab (charts-plt-0..N) divs
+    let found = 0;
     charts.forEach((c, i) => {
-      const el = document.getElementById(`plt-${i}`);
-      if (!el) return;
-      setTimeout(() => {
-        try { window.Plotly.downloadImage(el, { format:'png', scale:2, filename:`${base}_${i+1}`, width:i===0?1400:900, height:i===0?660:480 }); } catch {}
-      }, i * 800);
+      const candidates = [`plt-${i}`, `charts-plt-${i}`];
+      candidates.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        setTimeout(() => {
+          try {
+            window.Plotly.downloadImage(el, {
+              format: 'png', scale: 2,
+              filename: `${base}_${i + 1}`,
+              width: i === 0 ? 1400 : 900,
+              height: i === 0 ? 660 : 480,
+            });
+            found++;
+          } catch {}
+        }, found * 800);
+        found++;
+      });
     });
+
+    if (found === 0) { toast.warn('Open Overview or Charts tab first, then export PNG'); return; }
     toast.info('Downloading PNGs…');
   };
 
   return (
     <aside className={`sidebar${sidebarCollapsed ? ' collapsed' : ''}`}>
-      {/* Brand */}
       <div className="sb-brand">
         <div className="brand-mark sm">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="8" width="3" height="7" rx="1" fill="white" opacity=".85"/><rect x="6.5" y="4" width="3" height="11" rx="1" fill="white"/><rect x="12" y="1" width="3" height="14" rx="1" fill="white" opacity=".7"/></svg>
@@ -61,7 +77,6 @@ export default function Sidebar({ onRegenerate }) {
         </button>
       </div>
 
-      {/* Navigation */}
       <div className="sb-section">
         {!sidebarCollapsed && <div className="sb-section-label">Navigation</div>}
         {TABS.map(t => (
@@ -77,7 +92,6 @@ export default function Sidebar({ onRegenerate }) {
         ))}
       </div>
 
-      {/* File */}
       {file && (
         <div className="sb-file">
           <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M8 1H3a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V5L8 1z" stroke="currentColor" strokeWidth="1.2"/></svg>
@@ -85,7 +99,6 @@ export default function Sidebar({ onRegenerate }) {
         </div>
       )}
 
-      {/* Actions */}
       <div className="sb-bottom">
         <button className="action-btn" onClick={onRegenerate} title="Regenerate">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M12 7A5 5 0 1 1 7 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M7 2h3.5v3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>

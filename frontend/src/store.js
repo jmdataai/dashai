@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 const useStore = create((set, get) => ({
   // Navigation
-  page: 'landing', // 'landing' | 'dashboard'
+  page: 'landing',
 
   // Data
   did: null,
@@ -15,6 +15,7 @@ const useStore = create((set, get) => ({
   theme: 'dark',
   sidebarCollapsed: false,
   generating: false,
+  filterLoading: false,   // true while filter apply/clear is in-flight
 
   // Edit panel
   editIdx: null,
@@ -26,39 +27,36 @@ const useStore = create((set, get) => ({
   chatOpen: false,
   chatHistory: [],
 
-  // Filter
+  // Filter (what's selected in the dropdowns)
   filter: { col: null, val: null },
 
   // Actions
   goToDashboard: () => set({ page: 'dashboard', activeTab: 'overview' }),
-  goToLanding: () => set({ page: 'landing', chatOpen: false, filter: { col: null, val: null } }),
+  goToLanding:   () => set({ page: 'landing', chatOpen: false, filter: { col: null, val: null }, filterLoading: false }),
 
-  setDid: (did) => set({ did }),
-  setDash: (dash) => set({ dash }),
-  setProfile: (profile) => set({ profile }),
-  setFile: (file) => set({ file }),
-  setGenerating: (v) => set({ generating: v }),
+  setDid:       (did)     => set({ did }),
+  setDash:      (dash)    => set({ dash }),
+  setProfile:   (profile) => set({ profile }),
+  setFile:      (file)    => set({ file }),
+  setGenerating:(v)       => set({ generating: v }),
+  setFilterLoading: (v)   => set({ filterLoading: v }),
 
   setActiveTab: (tab) => set({ activeTab: tab }),
 
-  toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
-
+  toggleTheme:   () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
 
-  openEdit: (idx) => set({ editIdx: idx }),
-  closeEdit: () => set({ editIdx: null }),
-
+  openEdit:       (idx) => set({ editIdx: idx }),
+  closeEdit:      ()    => set({ editIdx: null }),
   openFullscreen: (idx) => set({ fullscreenIdx: idx }),
-  closeFullscreen: () => set({ fullscreenIdx: null }),
+  closeFullscreen:()    => set({ fullscreenIdx: null }),
 
-  toggleChat: () => set((s) => ({ chatOpen: !s.chatOpen })),
-
+  toggleChat:     () => set((s) => ({ chatOpen: !s.chatOpen })),
   addChatMessage: (msg) => set((s) => ({ chatHistory: [...s.chatHistory, msg] })),
-  clearChatHistory: () => set({ chatHistory: [] }),
+  clearChatHistory:()   => set({ chatHistory: [] }),
 
-  setFilter: (col, val) => set({ filter: { col, val } }),
-  clearFilter: () => set({ filter: { col: null, val: null } }),
-  setFilterAndApply: null, // set by Dashboard component
+  setFilter:   (col, val) => set({ filter: { col, val } }),
+  clearFilter: ()         => set({ filter: { col: null, val: null } }),
 
   updateChart: (idx, updates) => set((s) => {
     if (!s.dash?.charts) return {};

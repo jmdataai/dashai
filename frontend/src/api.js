@@ -1,5 +1,4 @@
 const API = window.DASHAI_API || 'http://localhost:7860';
-
 const timeout = (ms) => AbortSignal.timeout(ms);
 
 export async function apiHealth() {
@@ -21,12 +20,17 @@ export async function apiSample(name = 'sales') {
   return r.json();
 }
 
-export async function apiGenerate(did, filterCol = null, filterVal = null) {
+// forceFresh=true  → Regenerate button  → calls LLM
+// forceFresh=false → filter apply/clear  → reuses stored plan, zero LLM calls
+export async function apiGenerate(did, filterCol = null, filterVal = null, forceFresh = false) {
   const body = {};
   if (filterCol && filterVal) { body.filter_col = filterCol; body.filter_val = filterVal; }
+  if (forceFresh) body.force_fresh = true;
   const r = await fetch(`${API}/api/generate/${did}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body), signal: timeout(90000),
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: timeout(90000),
   });
   if (!r.ok) throw new Error('Generation failed: ' + r.status);
   return r.json();

@@ -3,27 +3,36 @@ import PlotlyChart from './PlotlyChart';
 import useStore from '../store';
 import { toast } from '../toast';
 
-export default function ChartCard({ chart, idx, height = '360px' }) {
+export default function ChartCard({ chart, idx, plotId, height = '360px' }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const { openEdit, openFullscreen, deleteChart, duplicateChart } = useStore();
 
-  const is3D   = ['scatter3d','surface3d'].includes(chart.type);
-  const isAnim = ['animated_bar','animated_scatter'].includes(chart.type);
+  const is3D   = ['scatter3d', 'surface3d'].includes(chart.type);
+  const isAnim = ['animated_bar', 'animated_scatter'].includes(chart.type);
 
-  // Close menu on outside click
+  // plotId = unique DOM id for this chart div (avoids collisions between tabs)
+  // If not passed, fall back to plt-{idx}
+  const domId = plotId || `plt-${idx}`;
+
   useEffect(() => {
-    const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+    const handler = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   const downloadPNG = () => {
     setMenuOpen(false);
-    const el = document.getElementById(`plt-${idx}`);
+    const el = document.getElementById(domId);
     if (!el) return;
     try {
-      window.Plotly.downloadImage(el, { format: 'png', scale: 2, filename: (chart.title || 'chart').replace(/\W+/g, '_'), width: 1200, height: 600 });
+      window.Plotly.downloadImage(el, {
+        format: 'png', scale: 2,
+        filename: (chart.title || 'chart').replace(/\W+/g, '_'),
+        width: 1200, height: 600,
+      });
       toast.info('Downloading PNG…');
     } catch { toast.error('PNG download failed'); }
   };
@@ -51,7 +60,7 @@ export default function ChartCard({ chart, idx, height = '360px' }) {
         </div>
       </div>
       {chart.subtitle && <div className="chart-sub">{chart.subtitle}</div>}
-      <div id={`plt-${idx}`}>
+      <div id={domId}>
         <PlotlyChart chart={chart} height={height} />
       </div>
     </div>

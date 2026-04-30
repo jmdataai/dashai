@@ -410,6 +410,7 @@ class GenReq(BaseModel):
     seed: int | None = None
     filter_col: str | None = None
     filter_val: str | None = None
+    force_fresh: bool = False   # True = call LLM (Regenerate btn). False = reuse stored plan if available.
 
 @app.post("/api/generate/{dataset_id}")
 async def generate(dataset_id: str, body: GenReq | None = None):
@@ -427,16 +428,19 @@ async def generate(dataset_id: str, body: GenReq | None = None):
             raise HTTPException(400, f"No rows match filter: {filter_col} = '{filter_val}'")
 
     # Reuse stored plan when filtering (skip LLM re-call), call LLM only on fresh generate
-    stored_plan = item.get("plan") if (filter_col and filter_val) else None
-    if stored_plan:
-        plan, provider = stored_plan["plan"], stored_plan["provider"]
-        logger.info(f"Reusing stored plan, provider={provider}")
+    # Reuse stored plan when: plan exists AND caller didn't force a fresh LLM call.
+    # Filter apply, clear filter → reuse plan (zero LLM calls, instant).
+    # Regenerate button → force_fresh=True → always calls LLM.
+    force_fresh = body.force_fresh if body else False
+    stored = item.get("plan")
+    if stored and not force_fresh:
+        plan, provider = stored["plan"], stored["provider"]
+        logger.info(f"Reusing stored plan (no LLM), provider={provider}")
     else:
         plan, provider = _call_llm(_build_prompt(profile))
         if not plan:
             plan = _fallback_plan(profile, seed); provider = "rules"
-        # Store plan for future filter re-uses
-        item["plan"] = {"plan": plan, "provider": provider}
+        item["plan"] = {"plan": plan, "provider": provider}   # store for all future filter ops
     logger.info(f"provider={provider} charts={len(plan.get('charts',[]))}")
     valid_cols = {c["name"] for c in profile["columns"]}
 

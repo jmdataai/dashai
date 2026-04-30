@@ -4,99 +4,140 @@ import { apiGenerate } from '../api';
 import { toast } from '../toast';
 
 export default function Topbar() {
-  const { dash, profile, file, theme, toggleTheme, filter, setFilter, clearFilter, did, setDash } = useStore();
-  const [clock, setClock]       = useState('');
-  const [applying, setApplying] = useState(false);
-  const applyTimer = useRef(null);
+  const {
+    dash, profile, file, theme, toggleTheme,
+    filter, setFilter, clearFilter,
+    did, setDash,
+    filterLoading, setFilterLoading,
+  } = useStore();
+
+  const [clock, setClock] = useState('');
+  const timerRef = useRef(null);
 
   const catCols = profile?.columns?.filter(c => c.semantic === 'categorical') || [];
   const valCol  = catCols.find(c => c.name === filter.col);
+  const isFiltered = !!(dash?.filter?.col && dash?.filter?.val);
 
+  // Clock
   useEffect(() => {
-    const tick = () => setClock(new Date().toLocaleString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }));
-    tick(); const id = setInterval(tick, 30000);
+    const tick = () => setClock(new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }));
+    tick();
+    const id = setInterval(tick, 30000);
     return () => clearInterval(id);
   }, []);
 
-  const applyFilter = async (col, val) => {
-    if (!did || !col || !val) return;
-    clearTimeout(applyTimer.current);
-    applyTimer.current = setTimeout(async () => {
-      setApplying(true);
-      try {
-        const d = await apiGenerate(did, col, val);
-        setDash(d);
-        toast.success(`Filtered: ${col} = "${val}"`);
-      } catch (e) {
-        toast.error('Filter failed: ' + e.message);
-      } finally { setApplying(false); }
-    }, 300);
-  };
-
-  const handleClearFilter = async () => {
-    clearFilter();
+  // Core filter apply — no LLM, uses stored plan on backend
+  const runFilter = async (col, val) => {
     if (!did) return;
-    setApplying(true);
+    setFilterLoading(true);
     try {
-      const d = await apiGenerate(did);
+      // forceFresh=false → backend reuses stored plan, zero LLM calls
+      const d = await apiGenerate(did, col || null, val || null, false);
       setDash(d);
-      toast.info('Filter cleared — showing all data');
+      if (col && val) toast.success(`Filtered: ${col} = "${val}"`);
+      else            toast.info('Filter cleared — showing all data');
     } catch (e) {
-      toast.error('Reset failed: ' + e.message);
-    } finally { setApplying(false); }
+      toast.error('Filter failed: ' + e.message);
+    } finally {
+      setFilterLoading(false);
+    }
   };
 
-  const onColChange = (col) => setFilter(col || null, null);
-  const onValChange = (val) => { setFilter(filter.col, val || null); if (val) applyFilter(filter.col, val); };
-  const isFiltered = !!(dash?.filter?.col && dash?.filter?.val);
+  // Column dropdown changed → reset value, don't call backend yet
+  const onColChange = (col) => {
+    clearTimeout(timerRef.current);
+    setFilter(col || null, null);
+  };
+
+  // Value dropdown changed → immediately apply filter
+  const onValChange = (val) => {
+    clearTimeout(timerRef.current);
+    setFilter(filter.col, val || null);
+    if (val) {
+      // Small debounce to avoid double-trigger on slow devices
+      timerRef.current = setTimeout(() => runFilter(filter.col, val), 120);
+    }
+  };
+
+  // Clear button → restore full dataset with same chart layout
+  const onClear = () => {
+    clearTimeout(timerRef.current);
+    clearFilter();
+    runFilter(null, null);
+  };
 
   return (
     <header className="topbar">
       <div className="tb-left">
+        {/* Breadcrumb */}
         <div className="breadcrumb">
           <span>DashAI</span>
           <span className="bc-sep">›</span>
           <span className="bc-current">{file || 'Dashboard'}</span>
         </div>
 
+        {/* Filter bar — only shown when categorical columns exist */}
         {profile && catCols.length > 0 && (
           <div className="filter-bar">
-            <select className="filter-select" value={filter.col || ''} onChange={e => onColChange(e.target.value)} disabled={applying}>
+
+            {/* Column selector */}
+            <select
+              className="filter-select"
+              value={filter.col || ''}
+              onChange={e => onColChange(e.target.value)}
+              disabled={filterLoading}
+            >
               <option value="">Filter by column…</option>
               {catCols.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
             </select>
 
+            {/* Value selector — shown only after column picked */}
             {filter.col && valCol && (
-              <select className="filter-select" value={filter.val || ''} onChange={e => onValChange(e.target.value)} disabled={applying}>
+              <select
+                className="filter-select"
+                value={filter.val || ''}
+                onChange={e => onValChange(e.target.value)}
+                disabled={filterLoading}
+              >
                 <option value="">All values…</option>
-                {valCol.sample_values?.map(v => <option key={v} value={v}>{v}</option>)}
+                {valCol.sample_values?.map(v => (
+                  <option key={v} value={v}>{v}</option>
+                ))}
               </select>
             )}
 
-            {applying && (
-              <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, color:'var(--muted)' }}>
-                <div className="spin" style={{ width:10, height:10 }} /><span>Applying…</span>
-              </div>
-            )}
-
-            {isFiltered && !applying && (
-              <span style={{ fontSize:10, fontWeight:700, padding:'3px 8px', background:'rgba(59,130,246,0.12)', border:'1px solid rgba(59,130,246,0.3)', borderRadius:6, color:'var(--accent2)', whiteSpace:'nowrap' }}>
+            {/* Active filter badge */}
+            {isFiltered && !filterLoading && (
+              <span className="filter-active-badge">
                 {dash.filter.col}: {dash.filter.val}
               </span>
             )}
 
-            {(filter.col || isFiltered) && !applying && (
-              <button className="filter-clear" onClick={handleClearFilter}>✕ Clear</button>
+            {/* Applying indicator in topbar (subtle) */}
+            {filterLoading && (
+              <span className="filter-applying-txt">
+                <span className="spin" style={{ width: 9, height: 9, flexShrink: 0 }} />
+                Applying…
+              </span>
+            )}
+
+            {/* Clear — shown when a column is picked or filter is active */}
+            {(filter.col || isFiltered) && !filterLoading && (
+              <button className="filter-clear" onClick={onClear}>✕ Clear</button>
             )}
           </div>
         )}
       </div>
 
       <div className="tb-right">
-        {dash?.provider && <span className="provider-badge">{dash.provider}</span>}
+        {dash?.provider && (
+          <span className="provider-badge">{dash.provider}</span>
+        )}
         {profile?.rows && (
           <span className="rows-badge">
-            {isFiltered ? `filtered data` : `${profile.rows.toLocaleString()} rows`}
+            {isFiltered
+              ? `Filtered · ${dash.filter.col} = ${dash.filter.val}`
+              : `${profile.rows.toLocaleString()} rows`}
           </span>
         )}
         <button className="theme-btn" onClick={toggleTheme}>
