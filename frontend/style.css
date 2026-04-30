@@ -260,3 +260,149 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13
 
 /* ── 3D chart scene ── */
 .chart-card canvas { border-radius:8px; }
+
+/* ═══════════════════════════════════════════════════════
+   DashAI v6 — New Component Styles
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Page show/hide ── */
+#page-dash{display:none;height:100vh;overflow:hidden}
+#page-dash.show{display:flex}
+
+/* ── Gen overlay ── */
+#gen-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(6,10,20,.95);backdrop-filter:blur(10px);flex-direction:column;align-items:center;justify-content:center}
+#gen-overlay.show{display:flex}
+
+/* ── D1. Feature cards ── */
+.features-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:560px;margin-top:20px}
+.feature-card{background:rgba(17,27,46,.5);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.feature-icon{font-size:18px;margin-bottom:8px}
+.feature-title{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px}
+.feature-desc{font-size:10px;color:var(--muted);line-height:1.5}
+
+/* ── D2. Filter bar ── */
+.tb-filter-bar{display:flex;align-items:center;gap:6px;margin-left:16px}
+.tb-filter-col,.tb-filter-val{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;padding:4px 10px;font-family:var(--font);outline:none;cursor:pointer}
+.tb-filter-col:focus,.tb-filter-val:focus{border-color:var(--accent2)}
+.tb-filter-clear{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:10px;padding:4px 10px;cursor:pointer;font-family:var(--font);transition:all .15s}
+.tb-filter-clear:hover{color:var(--red);border-color:var(--red)}
+.tb-provider-badge{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(0,196,140,.1);color:var(--green);border:1px solid rgba(0,196,140,.25);border-radius:10px;padding:3px 10px}
+.tb-rows-count{font-size:10px;color:var(--dim);font-family:var(--mono)}
+
+/* ── D3. Chart context menu ── */
+.chart-menu-wrap{position:relative}
+.chart-menu-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:18px;font-weight:700;padding:2px 8px;border-radius:6px;line-height:1;transition:all .15s}
+.chart-menu-btn:hover{color:var(--text);background:var(--surface)}
+.chart-menu{display:none;position:absolute;right:0;top:calc(100% + 4px);min-width:160px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;z-index:50;padding:4px;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.chart-menu.open{display:block;animation:fadeUp .15s ease}
+.chart-menu button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--text2);font-family:var(--font);font-size:12px;font-weight:500;padding:8px 12px;border-radius:6px;cursor:pointer;transition:background .12s}
+.chart-menu button:hover{background:var(--surface3);color:var(--text)}
+.chart-menu button:last-child:hover{color:var(--red)}
+
+/* ── D4. Edit Panel ── */
+.edit-panel{position:fixed;top:0;right:-380px;width:360px;height:100vh;background:var(--bg2);border-left:1px solid var(--border);z-index:200;display:flex;flex-direction:column;transition:right .28s cubic-bezier(.4,0,.2,1);box-shadow:-8px 0 40px rgba(0,0,0,.4)}
+.edit-panel.open{right:0}
+.edit-overlay{display:none;position:fixed;inset:0;z-index:199;background:rgba(6,10,20,.5);backdrop-filter:blur(2px)}
+.edit-overlay.show{display:block}
+.ep-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border);flex-shrink:0}
+.ep-title{font-size:14px;font-weight:700}
+.ep-close{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:6px;transition:all .15s}
+.ep-close:hover{color:var(--text);background:var(--surface)}
+.ep-body{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+.ep-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ep-select,.ep-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:8px 12px;outline:none;transition:border-color .15s}
+.ep-select:focus,.ep-input:focus{border-color:var(--accent2)}
+.ep-footer{display:flex;gap:10px;padding:16px 20px;border-top:1px solid var(--border);flex-shrink:0}
+.ep-cancel{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:9px;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:600;transition:all .15s}
+.ep-apply{flex:2;background:linear-gradient(135deg,var(--accent),#7c3aed);border:none;color:#fff;border-radius:8px;padding:9px;cursor:pointer;font-family:var(--font);font-size:12px;font-weight:700;transition:opacity .15s}
+.ep-apply:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── D5. Fullscreen Modal ── */
+.fullscreen-modal{display:none;position:fixed;inset:0;z-index:250;background:var(--bg);padding:20px 24px;flex-direction:column}
+.fullscreen-modal.open{display:flex}
+.fs-close{position:absolute;top:16px;right:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;font-size:15px;padding:6px 14px;z-index:1;transition:all .15s}
+.fs-close:hover{color:var(--text);border-color:var(--border2)}
+.fs-title{font-size:16px;font-weight:700;margin-bottom:12px;padding-right:80px}
+
+/* ── D6. Toast Notifications ── */
+.toast-container{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:400;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{display:flex;align-items:center;gap:10px;padding:10px 18px;border-radius:10px;font-size:12px;font-weight:600;font-family:var(--font);opacity:0;transform:translateY(12px);transition:all .25s;pointer-events:auto;box-shadow:0 8px 24px rgba(0,0,0,.4);min-width:200px}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast-success{background:rgba(0,196,140,.15);border:1px solid rgba(0,196,140,.3);color:var(--green)}
+.toast-error{background:rgba(255,92,106,.12);border:1px solid rgba(255,92,106,.25);color:var(--red)}
+.toast-info{background:rgba(79,109,245,.12);border:1px solid rgba(79,109,245,.25);color:var(--accent2)}
+.toast-warn{background:rgba(255,176,32,.1);border:1px solid rgba(255,176,32,.25);color:var(--amber)}
+.toast-icon{font-size:14px;flex-shrink:0}
+
+/* ── D7. Chat Panel ── */
+.chat-bubble{display:none;position:fixed;bottom:28px;right:28px;z-index:150;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));border:none;cursor:pointer;box-shadow:0 4px 24px rgba(79,109,245,.5);transition:transform .2s,box-shadow .2s;align-items:center;justify-content:center}
+body.dash-active .chat-bubble{display:flex}
+.chat-bubble:hover{transform:scale(1.08);box-shadow:0 6px 32px rgba(79,109,245,.65)}
+.chat-panel{position:fixed;bottom:92px;right:28px;width:360px;z-index:149;background:var(--bg2);border:1px solid var(--border2);border-radius:16px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 16px 60px rgba(0,0,0,.5);transform:scale(.95) translateY(12px);opacity:0;pointer-events:none;transition:all .22s cubic-bezier(.4,0,.2,1);transform-origin:bottom right;max-height:540px}
+.chat-panel.open{transform:scale(1) translateY(0);opacity:1;pointer-events:auto}
+.cp-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.cp-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}
+.cp-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+.cp-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.cp-msg{display:flex}
+.cp-msg.user{justify-content:flex-end}
+.cp-bubble{max-width:82%;padding:9px 13px;border-radius:12px;font-size:12.5px;line-height:1.55;color:var(--text2)}
+.cp-msg.user .cp-bubble{background:rgba(79,109,245,.18);border:1px solid rgba(79,109,245,.3);color:var(--text)}
+.cp-msg.assistant .cp-bubble{background:var(--surface);border:1px solid var(--border)}
+.cp-bubble.thinking{color:var(--muted);font-style:italic}
+.cp-suggestions{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 10px}
+.cp-suggestion{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:10.5px;padding:4px 10px;cursor:pointer;font-family:var(--font);transition:all .15s;text-align:left}
+.cp-suggestion:hover{color:var(--accent2);border-color:var(--accent)}
+.cp-input-row{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border);flex-shrink:0;align-items:flex-end}
+.cp-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font);font-size:12px;padding:8px 12px;resize:none;outline:none;transition:border-color .15s;max-height:80px}
+.cp-input:focus{border-color:var(--accent2)}
+.cp-send{width:36px;height:36px;border-radius:8px;border:none;cursor:pointer;flex-shrink:0;background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;font-size:13px;transition:opacity .15s}
+.cp-send:hover{opacity:.85}
+
+/* ── D8. Insights Tab ── */
+.ins-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px;margin-bottom:16px}
+.ins-card-header{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2)}
+.ins-icon{font-size:14px}
+.ins-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.ins-item{font-size:13px;color:var(--text2);line-height:1.6;padding-left:18px;position:relative}
+.ins-item::before{content:'—';position:absolute;left:0;color:var(--accent2);opacity:.6}
+.ins-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.ins-stat{background:var(--bg3);border-radius:var(--r);padding:14px 16px;text-align:center}
+.ins-stat-val{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--text);margin-bottom:4px}
+.ins-stat-lbl{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ins-stat.warn .ins-stat-val{color:var(--amber)}
+.ins-stat.ok .ins-stat-val{color:var(--green)}
+.ins-null-warn{margin-top:12px;font-size:11px;color:var(--amber);background:rgba(255,176,32,.06);border:1px solid rgba(255,176,32,.18);border-radius:8px;padding:8px 12px}
+.ins-type-chips{display:flex;flex-wrap:wrap;gap:6px}
+.ins-type-chip{background:rgba(79,109,245,.08);border:1px solid rgba(79,109,245,.2);border-radius:6px;color:var(--accent2);font-size:11px;padding:4px 10px;font-weight:500}
+.ins-type-count{color:var(--muted)}
+
+/* ── Overview insights box ── */
+.insights-box{background:var(--surface);border:1px solid rgba(79,109,245,.2);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:20px;border-left:3px solid var(--accent)}
+.ins-box-header{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2);margin-bottom:12px}
+.ins-box-icon{font-size:13px}
+.ins-box-list{list-style:none;display:flex;flex-direction:column;gap:6px}
+.ins-box-item{font-size:12.5px;color:var(--text2);line-height:1.6;padding-left:16px;position:relative}
+.ins-box-item::before{content:'·';position:absolute;left:0;color:var(--accent2);font-size:16px;line-height:1.2}
+
+/* ── D9. Data table toolbar ── */
+.dt-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.dt-search{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:12px;padding:6px 12px;outline:none;width:220px;transition:border-color .15s}
+.dt-search:focus{border-color:var(--accent2)}
+.dt-export-btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--font);font-size:11px;padding:6px 14px;cursor:pointer;transition:all .15s;font-weight:600}
+.dt-export-btn:hover{color:var(--text);border-color:var(--border2)}
+.sort-icon{font-size:9px;color:var(--dim);margin-left:4px}
+.mono{font-family:var(--mono)}
+.warn-text{color:var(--amber)}
+.sample-vals{color:var(--muted);font-size:10.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Light theme patches for new components */
+body.light .insights-box{background:var(--surface);border-color:rgba(61,91,224,.2)}
+body.light .ins-card{background:var(--surface)}
+body.light .ins-stat{background:var(--bg3)}
+body.light .chat-panel{background:var(--surface)}
+body.light .cp-msg.assistant .cp-bubble{background:var(--bg3)}
+body.light .edit-panel{background:var(--surface)}
+body.light .ep-select,.body.light .ep-input{background:var(--bg2)}
+body.light .chart-menu{background:var(--surface2)}
+body.light .feature-card{background:rgba(255,255,255,.6)}
