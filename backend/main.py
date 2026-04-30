@@ -29,7 +29,7 @@ def _store(did, df, profile):
     if len(DATASETS) >= 64:
         oldest = min(DATASETS, key=lambda k: DATASETS[k]["ts"])
         DATASETS.pop(oldest, None)
-    DATASETS[did] = {"df": df, "profile": profile, "ts": datetime.now(timezone.utc).isoformat()}
+    DATASETS[did] = {"df": df, "profile": profile, "plan": None, "ts": datetime.now(timezone.utc).isoformat()}
 
 def _get(did):
     item = DATASETS.get(did)
@@ -142,7 +142,13 @@ CHAT_SYSTEM_PROMPT = """You are an AI analytics assistant inside a data dashboar
 Reply conversationally (2-3 sentences), then optionally include ONE action block:
 <action>{"type":"update_chart","chart_id":"id","spec":{"type":"line","x":"col","y":"col","color":null,"agg":"sum","title":"Title"}}</action>
 OR: <action>{"type":"add_chart","spec":{"type":"bar","x":"col","y":"col","color":null,"agg":"sum","title":"Title","span":1}}</action>
-Rules: only reference column names from the provided schema (exact case). For analysis questions: text reply only."""
+
+Rules:
+- ONLY use column names that appear EXACTLY in the schema below. Never invent or guess column names.
+- If the user asks for a column that is not in the schema, DO NOT produce an action block. Instead reply asking them to choose from the available columns and list them.
+- If the user's request is ambiguous (e.g. "change the chart" without specifying which one), ask which chart they mean and list the available chart IDs.
+- For analysis/insight questions: text reply only, no action block.
+- Use exact chart IDs from the current charts list when updating."""
 
 def _build_prompt(profile: dict) -> str:
     lines = []
@@ -402,15 +408,35 @@ async def upload(file: UploadFile = File(...)):
 
 class GenReq(BaseModel):
     seed: int | None = None
+    filter_col: str | None = None
+    filter_val: str | None = None
 
 @app.post("/api/generate/{dataset_id}")
 async def generate(dataset_id: str, body: GenReq | None = None):
     item   = _get(dataset_id)
     df, profile = item["df"], item["profile"]
     seed   = (body.seed if body and body.seed else random.randint(0, 999999))
-    plan, provider = _call_llm(_build_prompt(profile))
-    if not plan:
-        plan = _fallback_plan(profile, seed); provider = "rules"
+
+    # Apply filter to dataframe if provided
+    filter_col = body.filter_col if body else None
+    filter_val = body.filter_val if body else None
+    if filter_col and filter_val and filter_col in df.columns:
+        df = df[df[filter_col].astype(str) == str(filter_val)].copy()
+        logger.info(f"Filter applied: {filter_col}={filter_val} → {len(df)} rows")
+        if df.empty:
+            raise HTTPException(400, f"No rows match filter: {filter_col} = '{filter_val}'")
+
+    # Reuse stored plan when filtering (skip LLM re-call), call LLM only on fresh generate
+    stored_plan = item.get("plan") if (filter_col and filter_val) else None
+    if stored_plan:
+        plan, provider = stored_plan["plan"], stored_plan["provider"]
+        logger.info(f"Reusing stored plan, provider={provider}")
+    else:
+        plan, provider = _call_llm(_build_prompt(profile))
+        if not plan:
+            plan = _fallback_plan(profile, seed); provider = "rules"
+        # Store plan for future filter re-uses
+        item["plan"] = {"plan": plan, "provider": provider}
     logger.info(f"provider={provider} charts={len(plan.get('charts',[]))}")
     valid_cols = {c["name"] for c in profile["columns"]}
 
@@ -456,6 +482,7 @@ async def generate(dataset_id: str, body: GenReq | None = None):
         "insights": plan.get("insights") or _fallback_insights(profile, kpis),
         "provider": provider,
         "seed": seed,
+        "filter": {"col": filter_col, "val": filter_val} if filter_col and filter_val else None,
     }
 
 class ExportReq(BaseModel):

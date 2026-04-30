@@ -21,10 +21,12 @@ export async function apiSample(name = 'sales') {
   return r.json();
 }
 
-export async function apiGenerate(did) {
+export async function apiGenerate(did, filterCol = null, filterVal = null) {
+  const body = {};
+  if (filterCol && filterVal) { body.filter_col = filterCol; body.filter_val = filterVal; }
   const r = await fetch(`${API}/api/generate/${did}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: '{}', signal: timeout(90000),
+    body: JSON.stringify(body), signal: timeout(90000),
   });
   if (!r.ok) throw new Error('Generation failed: ' + r.status);
   return r.json();

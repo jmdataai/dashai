@@ -928,3 +928,5 @@ body.light .data-table td { border-color: rgba(0,0,0,0.04); }
 body.light .chart-card:hover { box-shadow: 0 0 0 1px rgba(59,130,246,0.2), 0 8px 36px rgba(0,0,0,0.1); }
 body.light .ins-stat { background: var(--bg2); }
 body.light .cp-msg.assistant .cp-bubble { background: var(--bg2); }
+
+.cp-bubble.cp-error { color: var(--red); background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.25); }

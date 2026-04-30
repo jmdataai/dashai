@@ -58,6 +58,7 @@ const useStore = create((set, get) => ({
 
   setFilter: (col, val) => set({ filter: { col, val } }),
   clearFilter: () => set({ filter: { col: null, val: null } }),
+  setFilterAndApply: null, // set by Dashboard component
 
   updateChart: (idx, updates) => set((s) => {
     if (!s.dash?.charts) return {};
