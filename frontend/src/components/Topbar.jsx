@@ -98,6 +98,8 @@ export default function Topbar() {
                 value={filter.val || ''}
                 onChange={e => onValChange(e.target.value)}
                 disabled={filterLoading}
+                size={1}
+                style={{ maxWidth: 160 }}
               >
                 <option value="">All values…</option>
                 {valCol.sample_values?.map(v => (

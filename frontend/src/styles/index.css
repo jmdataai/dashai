@@ -1100,3 +1100,49 @@ body.light .fo-text strong      { color: #4468B0; }
 body.light .fo-sub              { color: #92A0BA; }
 
 .cp-bubble.cp-error { color: var(--red); background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.25); }
+
+/* ── Filter applying loading indicator (restored) ── */
+.filter-applying-txt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ── Filter active badge ── */
+.filter-active-badge {
+  font-family: var(--font-ui);
+  font-size: 10px; font-weight: 500;
+  padding: 3px 9px;
+  background: rgba(68,104,176,0.12);
+  border: 1px solid rgba(68,104,176,0.3);
+  border-radius: 6px;
+  color: var(--accent2);
+  white-space: nowrap;
+  letter-spacing: 0.06em;
+}
+
+/* ── Filter dropdown — scrollable for many values ── */
+.filter-select {
+  max-height: 38px;    /* collapsed height */
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Native <select> size attribute via JS is not used,
+   but the dropdown list itself scrolls natively in browser
+   when option count > ~8. Force a visible size cap: */
+select.filter-select option {
+  background: var(--surface2);
+  color: var(--text);
+  padding: 6px 10px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+}
+body.light select.filter-select option {
+  background: #FFFFFF;
+  color: #141B34;
+}

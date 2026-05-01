@@ -86,7 +86,7 @@ def profile_df(df: pd.DataFrame, filename: str) -> dict:
         info = {
             "name": c, "dtype": str(s.dtype), "semantic": sem,
             "n_unique": int(s.nunique()), "n_null": int(s.isna().sum()),
-            "sample_values": [str(v) for v in s.dropna().head(6).tolist()],
+            "sample_values": [str(v) for v in s.dropna().unique().tolist()],
         }
         if sem == "numeric":
             ns = pd.to_numeric(s, errors="coerce").dropna()
