@@ -11,19 +11,9 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-# JM Data brand palette — Primary: #4468B0, supporting blues/greys
-PALETTE = [
-    "#4468B0",  # JM Primary Blue-Purple
-    "#6b8ec9",  # Accent lighter blue
-    "#92A0BA",  # JM Text Secondary
-    "#5b7fd4",  # Cornflower blue
-    "#3a5a9b",  # JM Deep blue
-    "#7fa0d8",  # Soft blue
-    "#2d4d8a",  # Navy
-    "#b0c4e8",  # Pale blue
-    "#1e3a7a",  # Deep navy
-    "#c8d8f0",  # Very pale blue
-]
+# Vibrant data palette — distinct colors for chart readability
+PALETTE = ["#4468B0","#22d3ee","#10b981","#f59e0b","#a78bfa",
+           "#f87171","#ec4899","#14b8a6","#f97316","#84cc16"]
 
 # JM Data brand layout for all charts
 JM_FONT = "Plus Jakarta Sans, Space Grotesk, system-ui, sans-serif"

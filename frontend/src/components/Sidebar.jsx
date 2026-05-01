@@ -86,10 +86,7 @@ export default function Sidebar({ onRegenerate }) {
           />
           <JMBlueMark size={18} style={{ display: 'none' }} />
         </div>
-        <span className="sb-name">
-          <span className="jm">JMData</span>
-          <span className="data"> Talent</span>
-        </span>
+        <span className="sb-name">JMData Talent</span>
         <button className="sb-toggle" onClick={toggleSidebar} title="Toggle sidebar">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
         </button>

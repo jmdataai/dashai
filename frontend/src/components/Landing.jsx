@@ -131,11 +131,7 @@ export default function Landing() {
             <JMLogo size={20} style={{ display: 'none' }} />
           </div>
           <div>
-            <div className="brand-name">
-              <span className="brand-jm">JMData</span>
-              <span className="brand-sep"> · </span>
-              <span className="brand-data">Talent Dash</span>
-            </div>
+            <span className="brand-name">JMData Talent</span>
           </div>
         </div>
         <div className="nav-right">

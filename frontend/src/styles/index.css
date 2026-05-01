@@ -167,18 +167,7 @@ body.light .land-nav { background: rgba(250, 247, 251, 0.82); }
   font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.4px;
-  color: var(--text);
-}
-.brand-jm  { color: var(--text); }
-.brand-data { color: var(--accent2); }
-.brand-sep  { color: var(--muted); font-weight: 400; margin: 0 2px; }
-.brand-sub  {
-  font-family: var(--font-ui);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--muted);
+  color: #FFFFFF;
 }
 
 .nav-right { display: flex; align-items: center; gap: 10px; }
@@ -399,10 +388,8 @@ body.light .feat-card { background: rgba(255,255,255,0.7); }
 .sb-name {
   font-family: var(--font);
   font-size: 13px; font-weight: 700; letter-spacing: -0.3px;
-  white-space: nowrap; color: var(--text);
+  white-space: nowrap; color: #FFFFFF;
 }
-.sb-name .jm   { color: var(--text); }
-.sb-name .data { color: var(--accent2); }
 .sb-toggle {
   margin-left: auto;
   background: transparent; border: none;
