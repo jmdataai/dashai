@@ -22,6 +22,18 @@ const TABS = [
   )},
 ];
 
+/* Inline JM mark for collapsed sidebar state */
+function JMBlueMark({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="7" fill="#4468B0"/>
+      <path d="M5 5 L5 22 Q5 28 0 28" stroke="#0C162A" strokeWidth="0" fill="none"/>
+      <path d="M4 5 L10 5 L10 21 Q10 27 3 27 L1 27 Q-0.5 27 -0.5 25.5 L-0.5 24 Q4 24 4 20 Z" fill="#0C162A" transform="translate(3,1.5) scale(0.82)"/>
+      <path d="M13 5 L17 5 L20 16 L23 5 L27 5 L27 27 L22 27 L22 17 L20 27 L16 27 L14 17 L14 27 L9 27 L9 5 Z" fill="#0C162A" transform="translate(4,1.5) scale(0.72)"/>
+    </svg>
+  );
+}
+
 export default function Sidebar({ onRegenerate }) {
   const { activeTab, setActiveTab, sidebarCollapsed, toggleSidebar, file, dash, goToLanding } = useStore();
 
@@ -38,8 +50,6 @@ export default function Sidebar({ onRegenerate }) {
     const charts = dash?.charts || [];
     if (!charts.length) { toast.warn('Generate a dashboard first'); return; }
     const base = (dash?.title || 'chart').replace(/\W+/g, '_');
-
-    // Try both Overview (plt-0..N) and Charts tab (charts-plt-0..N) divs
     let found = 0;
     charts.forEach((c, i) => {
       const candidates = [`plt-${i}`, `charts-plt-${i}`];
@@ -60,7 +70,6 @@ export default function Sidebar({ onRegenerate }) {
         found++;
       });
     });
-
     if (found === 0) { toast.warn('Open Overview or Charts tab first, then export PNG'); return; }
     toast.info('Downloading PNGs…');
   };
@@ -68,10 +77,19 @@ export default function Sidebar({ onRegenerate }) {
   return (
     <aside className={`sidebar${sidebarCollapsed ? ' collapsed' : ''}`}>
       <div className="sb-brand">
+        {/* Logo mark — shows image if available, falls back to inline SVG */}
         <div className="brand-mark sm">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="8" width="3" height="7" rx="1" fill="white" opacity=".85"/><rect x="6.5" y="4" width="3" height="11" rx="1" fill="white"/><rect x="12" y="1" width="3" height="14" rx="1" fill="white" opacity=".7"/></svg>
+          <img
+            src="/assets/logo-blue.png"
+            alt="JMData"
+            onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+          />
+          <JMBlueMark size={18} style={{ display: 'none' }} />
         </div>
-        <span className="sb-name">DashAI</span>
+        <span className="sb-name">
+          <span className="jm">JMData</span>
+          <span className="data"> Talent</span>
+        </span>
         <button className="sb-toggle" onClick={toggleSidebar} title="Toggle sidebar">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
         </button>

@@ -3,16 +3,33 @@ import useStore from '../store';
 import { apiUpload, apiSample, apiGenerate, apiHealth } from '../api';
 import { toast } from '../toast';
 
+/* ── JM Brand Mark SVG (blue version) ── */
+function JMLogo({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* J stroke */}
+      <path d="M7 6 L7 28 Q7 36 0 37" stroke="#0C162A" strokeWidth="0" fill="none"/>
+      <path fillRule="evenodd" clipRule="evenodd"
+        d="M5 5 L12 5 L12 27 Q12 36 3 37 L1 37 Q-1 37 -1 35 L-1 33 Q5 33 5 26 Z"
+        fill="#0C162A" transform="translate(4,1) scale(0.85)"/>
+      {/* M stroke */}
+      <path fillRule="evenodd" clipRule="evenodd"
+        d="M14 5 L19 5 L24 20 L29 5 L34 5 L34 35 L28 35 L28 22 L24 35 L20 35 L16 22 L16 35 L10 35 L10 5 Z"
+        fill="#0C162A" transform="translate(6,2) scale(0.78)"/>
+    </svg>
+  );
+}
+
 export default function Landing() {
   const { toggleTheme, theme, setDid, setDash, setProfile, setFile, goToDashboard, setGenerating } = useStore();
-  const [status, setStatus] = useState({ dot: '', text: 'Connecting…' });
+  const [status, setStatus]     = useState({ dot: '', text: 'Connecting…' });
   const [fileData, setFileData] = useState(null);
-  const [chips, setChips] = useState([]);
-  const [stMsg, setStMsg] = useState('');
-  const [err, setErr]   = useState('');
-  const [over, setOver] = useState(false);
+  const [chips, setChips]       = useState([]);
+  const [stMsg, setStMsg]       = useState('');
+  const [err, setErr]           = useState('');
+  const [over, setOver]         = useState(false);
   const [generating, setLocalGen] = useState(false);
-  const fileRef = useRef(null);
+  const fileRef  = useRef(null);
   const genTimer = useRef(null);
   const genBar   = useRef(null);
   const genText  = useRef(null);
@@ -32,15 +49,14 @@ export default function Landing() {
     setStMsg('Uploading & analyzing columns…');
     try {
       const data = await apiUpload(file);
-      setFileData(data);
-      setChips(data.columns || []);
+      setFileData(data); setChips(data.columns || []);
       setStMsg('');
       setDid(data.id); setProfile(data); setFile(data.filename);
       await doGenerate(data.id, data);
     } catch (e) { setStMsg(''); setErr(e.message); }
   }, []);
 
-  const doGenerate = async (did, profileData) => {
+  const doGenerate = async (did) => {
     setLocalGen(true); setGenerating(true);
     startOverlayAnim();
     try {
@@ -105,10 +121,22 @@ export default function Landing() {
       {/* Nav */}
       <nav className="land-nav">
         <div className="brand">
+          {/* Logo — drop logo-blue.png into /public/assets/ to replace */}
           <div className="brand-mark">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="8" width="3" height="7" rx="1" fill="white" opacity=".85"/><rect x="6.5" y="4" width="3" height="11" rx="1" fill="white"/><rect x="12" y="1" width="3" height="14" rx="1" fill="white" opacity=".7"/></svg>
+            <img
+              src="/assets/logo-blue.png"
+              alt="JMData"
+              onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+            />
+            <JMLogo size={20} style={{ display: 'none' }} />
           </div>
-          <span className="brand-name">Dash<span className="brand-ai">AI</span></span>
+          <div>
+            <div className="brand-name">
+              <span className="brand-jm">JMData</span>
+              <span className="brand-sep"> · </span>
+              <span className="brand-data">Talent Dash</span>
+            </div>
+          </div>
         </div>
         <div className="nav-right">
           <button className="theme-btn" onClick={toggleTheme}>
@@ -137,7 +165,6 @@ export default function Landing() {
         {/* Upload panel */}
         <div className="upload-panel">
           <div className="upload-inner">
-            {/* File preview */}
             {fileData && (
               <div className="file-preview show">
                 <svg width="18" height="22" viewBox="0 0 18 22" fill="none"><path d="M11 1H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6l-5-5z" stroke="currentColor" strokeWidth="1.4"/><path d="M11 1v5h5" stroke="currentColor" strokeWidth="1.4"/></svg>
@@ -151,11 +178,10 @@ export default function Landing() {
               </div>
             )}
 
-            {/* Column chips */}
             {chips.length > 0 && (
               <div className="col-chips show">
                 {chips.slice(0, 18).map(c => {
-                  const tp = c.semantic === 'numeric' ? 'n' : c.semantic === 'datetime' ? 'd' : 'c';
+                  const tp  = c.semantic === 'numeric' ? 'n' : c.semantic === 'datetime' ? 'd' : 'c';
                   const lbl = tp === 'n' ? '#' : tp === 'd' ? 'DT' : 'T';
                   return (
                     <div key={c.name} className="chip">
@@ -166,11 +192,9 @@ export default function Landing() {
               </div>
             )}
 
-            {/* Status */}
             {stMsg && <div className="st-row show"><div className="spin" /><span>{stMsg}</span></div>}
             {err   && <div className="err-msg show">⚠ {err}</div>}
 
-            {/* Drop zone */}
             <label
               className={`drop-zone${over ? ' over' : ''}`}
               onDragOver={e => { e.preventDefault(); setOver(true); }}
@@ -198,9 +222,9 @@ export default function Landing() {
         {/* Feature cards */}
         <div className="features-row">
           {[
-            { icon: '✦', title: 'AI Chart Selection', desc: 'LLM cascade picks the best chart types for your specific data' },
-            { icon: '▣', title: '12+ Chart Types', desc: 'Bar, line, scatter, 3D, animated, heatmap, treemap and more' },
-            { icon: '↓', title: 'Export & Share', desc: 'Download interactive HTML dashboards or high-res PNG exports' },
+            { icon: '✦', title: 'AI Chart Selection',  desc: 'LLM cascade picks the best chart types for your specific data' },
+            { icon: '▣', title: '12+ Chart Types',      desc: 'Bar, line, scatter, 3D, animated, heatmap, treemap and more' },
+            { icon: '↓', title: 'Export & Share',       desc: 'Download interactive HTML dashboards or high-res PNG exports' },
           ].map(f => (
             <div key={f.title} className="feat-card">
               <div className="feat-icon">{f.icon}</div>

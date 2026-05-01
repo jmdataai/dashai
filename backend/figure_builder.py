@@ -11,25 +11,53 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-PALETTE = ["#5b6ef5","#22d3ee","#10b981","#f59e0b","#a78bfa",
-           "#f87171","#ec4899","#14b8a6","#f97316","#84cc16"]
+# JM Data brand palette — Primary: #4468B0, supporting blues/greys
+PALETTE = [
+    "#4468B0",  # JM Primary Blue-Purple
+    "#6b8ec9",  # Accent lighter blue
+    "#92A0BA",  # JM Text Secondary
+    "#5b7fd4",  # Cornflower blue
+    "#3a5a9b",  # JM Deep blue
+    "#7fa0d8",  # Soft blue
+    "#2d4d8a",  # Navy
+    "#b0c4e8",  # Pale blue
+    "#1e3a7a",  # Deep navy
+    "#c8d8f0",  # Very pale blue
+]
+
+# JM Data brand layout for all charts
+JM_FONT = "Plus Jakarta Sans, Space Grotesk, system-ui, sans-serif"
 
 DARK_LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Sora, system-ui, sans-serif", color="#94a3b8", size=12),
+    font=dict(family=JM_FONT, color="#92A0BA", size=11),
     colorway=PALETTE,
-    margin=dict(l=52, r=24, t=36, b=52),
-    xaxis=dict(gridcolor="rgba(255,255,255,0.05)", linecolor="rgba(255,255,255,0.08)",
-               zerolinecolor="rgba(255,255,255,0.05)",
-               tickfont=dict(color="#607090", size=10), zeroline=False),
-    yaxis=dict(gridcolor="rgba(255,255,255,0.05)", linecolor="rgba(255,255,255,0.08)",
-               zerolinecolor="rgba(255,255,255,0.05)",
-               tickfont=dict(color="#607090", size=10), zeroline=False),
-    legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color="#607090", size=10),
-                orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-    hoverlabel=dict(bgcolor="#141e2e", bordercolor="#203050",
-                    font=dict(color="#edf2f8", size=12)),
+    margin=dict(l=54, r=24, t=38, b=54),
+    xaxis=dict(
+        gridcolor="rgba(68,104,176,0.1)",
+        linecolor="rgba(68,104,176,0.15)",
+        zerolinecolor="rgba(68,104,176,0.08)",
+        tickfont=dict(family=JM_FONT, color="#4a5878", size=10),
+        zeroline=False,
+    ),
+    yaxis=dict(
+        gridcolor="rgba(68,104,176,0.1)",
+        linecolor="rgba(68,104,176,0.15)",
+        zerolinecolor="rgba(68,104,176,0.08)",
+        tickfont=dict(family=JM_FONT, color="#4a5878", size=10),
+        zeroline=False,
+    ),
+    legend=dict(
+        bgcolor="rgba(0,0,0,0)",
+        font=dict(family=JM_FONT, color="#92A0BA", size=10),
+        orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
+    ),
+    hoverlabel=dict(
+        bgcolor="#141B34",
+        bordercolor="#4468B0",
+        font=dict(family=JM_FONT, color="#F7F8FB", size=12),
+    ),
 )
 
 

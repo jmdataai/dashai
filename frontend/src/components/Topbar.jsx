@@ -71,7 +71,7 @@ export default function Topbar() {
       <div className="tb-left">
         {/* Breadcrumb */}
         <div className="breadcrumb">
-          <span>DashAI</span>
+          <span>JMData Talent Dash</span>
           <span className="bc-sep">›</span>
           <span className="bc-current">{file || 'Dashboard'}</span>
         </div>
@@ -130,8 +130,6 @@ export default function Topbar() {
       </div>
 
       <div className="tb-right">
-        {dash?.provider && (
-          <span className="provider-badge">{dash.provider}</span>
         )}
         {profile?.rows && (
           <span className="rows-badge">
