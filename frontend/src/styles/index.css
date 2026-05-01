@@ -1146,3 +1146,48 @@ body.light select.filter-select option {
   background: #FFFFFF;
   color: #141B34;
 }
+
+/* ── Filter overlay (covers tab-panels, not full screen) ── */
+.filter-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 80;
+  background: rgba(12, 22, 42, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeUp 0.18s ease;
+}
+.filter-overlay-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-xl);
+  padding: 32px 40px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  min-width: 280px;
+  text-align: center;
+}
+.fo-spinner {
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+.fo-spinner .gen-ring { border-width: 2.5px; }
+.fo-text {
+  font-family: var(--font);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text2);
+  line-height: 1.5;
+}
+.fo-text strong { color: var(--accent2); }
+.fo-sub {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--muted);
+}
