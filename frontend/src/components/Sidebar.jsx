@@ -17,6 +17,9 @@ const TABS = [
   { id: 'stats', label: 'Column Stats', icon: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
   )},
+  { id: 'compare', label: 'Compare', icon: (
+    <svg width='16' height='16' viewBox='0 0 16 16' fill='none'><path d='M2 8h5M9 8h5M7 4l-2 4 2 4M9 4l2 4-2 4' stroke='currentColor' strokeWidth='1.3' strokeLinecap='round' strokeLinejoin='round'/></svg>
+  )},
   { id: 'data', label: 'Data', icon: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="4" rx="6" ry="2.5" stroke="currentColor" strokeWidth="1.3"/><path d="M2 4v8c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5V4" stroke="currentColor" strokeWidth="1.3"/><path d="M2 8c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5" stroke="currentColor" strokeWidth="1.3"/></svg>
   )},

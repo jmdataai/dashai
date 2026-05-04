@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import useStore from '../store';
-import { apiGenerate } from '../api';
+import { apiGenerate, apiExportHtml } from '../api';
+import { downloadBlob } from '../utils';
 import { toast } from '../toast';
 
 export default function Topbar() {
@@ -132,7 +133,6 @@ export default function Topbar() {
       </div>
 
       <div className="tb-right">
-        )}
         {profile?.rows && (
           <span className="rows-badge">
             {isFiltered
@@ -140,6 +140,18 @@ export default function Topbar() {
               : `${profile.rows.toLocaleString()} rows`}
           </span>
         )}
+        <button
+          className="share-btn"
+          title="Export & share as HTML"
+          onClick={async () => {
+            if (!dash) return;
+            try {
+              const blob = await apiExportHtml(dash);
+              downloadBlob(blob, (dash.title || 'dashboard').replace(/\W+/g,'_') + '.html');
+              toast.success('Dashboard exported! Share the HTML file.');
+            } catch { toast.error('Export failed'); }
+          }}
+        >↑ Share</button>
         <button className="theme-btn" onClick={toggleTheme}>
           <span>{theme === 'dark' ? '🌙' : '☀️'}</span>
           <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>

@@ -76,7 +76,7 @@ export default function Overview() {
       )}
 
       <div className="dash-footer">
-        JMData Talent Dash · {new Date().toLocaleDateString()} · {charts.length} charts · {dash.provider || 'AI'}
+        JMData Talent Dash · {new Date().toLocaleDateString()} · {charts.length} charts · AI
       </div>
     </div>
   );

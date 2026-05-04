@@ -3,6 +3,7 @@ JMData Talent Dash Backend — FastAPI v6
 Enterprise redesign: insights, real KPI trends, chart update, AI chat.
 """
 import io, json, os, re, uuid, random, logging, math
+import requests as _requests
 from datetime import datetime, timezone
 from typing import Any
 
@@ -13,7 +14,7 @@ from fastapi.responses import HTMLResponse
 from starlette.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from figure_builder import build_chart, build_chart_with_fallback, compute_kpi, format_kpi_value, PALETTE
+from figure_builder import build_chart, build_chart_with_fallback, compute_kpi, format_kpi_value, PALETTE, build_correlation_heatmap
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("dashai")
@@ -86,18 +87,75 @@ def profile_df(df: pd.DataFrame, filename: str) -> dict:
         info = {
             "name": c, "dtype": str(s.dtype), "semantic": sem,
             "n_unique": int(s.nunique()), "n_null": int(s.isna().sum()),
-            "sample_values": [str(v) for v in s.dropna().unique().tolist()],
+            "sample_values": [str(v) for v in s.dropna().unique()[:50].tolist()],
         }
         if sem == "numeric":
             ns = pd.to_numeric(s, errors="coerce").dropna()
             if len(ns):
-                info.update({"min": float(ns.min()), "max": float(ns.max()),
-                             "mean": float(ns.mean()), "sum": float(ns.sum())})
+                info.update({
+                    "min":    float(ns.min()),   "max":  float(ns.max()),
+                    "mean":   float(ns.mean()),  "sum":  float(ns.sum()),
+                    "median": float(ns.median()), "std": float(ns.std()),
+                })
         cols.append(info)
+
+    # ── Data health checks ──
+    dup_rows   = int(df.duplicated().sum())
+    null_cols  = [c["name"] for c in cols if c["n_null"] > 0]
+    high_card  = [c["name"] for c in cols if c["semantic"] == "categorical" and c["n_unique"] > 50]
+    num_cols   = [c for c in cols if c["semantic"] == "numeric"]
+
+    # ── Outlier detection (z-score > 3) ──
+    outlier_cols = []
+    for nc in num_cols:
+        ns = pd.to_numeric(df[nc["name"]], errors="coerce").dropna()
+        if len(ns) > 10:
+            mean, std = ns.mean(), ns.std()
+            if std > 0:
+                n_out = int(((ns - mean).abs() > 3 * std).sum())
+                if n_out > 0:
+                    outlier_cols.append({"col": nc["name"], "count": n_out,
+                                         "pct": round(n_out / len(ns) * 100, 1)})
+
+    # ── Correlation matrix (numeric cols only) ──
+    correlation = {}
+    if len(num_cols) >= 2:
+        num_df = df[[c["name"] for c in num_cols]].apply(pd.to_numeric, errors="coerce")
+        corr = num_df.corr().round(3)
+        correlation = corr.fillna(0).to_dict()
+
+    # ── Auto-suggested questions ──
+    cat_cols = [c for c in cols if c["semantic"] == "categorical"]
+    dt_cols  = [c for c in cols if c["semantic"] == "datetime"]
+    questions = []
+    if num_cols:
+        questions.append(f"What is the total {num_cols[0]['name'].replace('_',' ')}?")
+    if cat_cols and num_cols:
+        questions.append(f"Show {num_cols[0]['name'].replace('_',' ')} by {cat_cols[0]['name'].replace('_',' ')}")
+    if len(num_cols) >= 2:
+        questions.append(f"Is there a correlation between {num_cols[0]['name'].replace('_',' ')} and {num_cols[1]['name'].replace('_',' ')}?")
+    if dt_cols and num_cols:
+        questions.append(f"What is the trend of {num_cols[0]['name'].replace('_',' ')} over time?")
+    if cat_cols:
+        questions.append(f"Which {cat_cols[0]['name'].replace('_',' ')} has the highest frequency?")
+    if len(cat_cols) >= 2:
+        questions.append(f"Compare {num_cols[0]['name'].replace('_',' ') if num_cols else 'counts'} across {cat_cols[0]['name'].replace('_',' ')} and {cat_cols[1]['name'].replace('_',' ')}")
+    questions = questions[:6]
+
     return {
         "filename": filename, "rows": len(df), "cols": len(df.columns),
         "usable_cols": len(cols), "columns": cols,
         "preview": df.fillna("").astype(str).head(50).to_dict("records"),
+        "landing_preview": df.fillna("").astype(str).head(5).to_dict("records"),
+        "data_health": {
+            "duplicate_rows": dup_rows,
+            "null_columns":   null_cols,
+            "high_cardinality": high_card,
+            "total_nulls":    sum(c["n_null"] for c in cols),
+        },
+        "outlier_cols":  outlier_cols,
+        "correlation":   correlation,
+        "suggested_questions": questions,
     }
 
 DEFAULT_GROQ_MODEL   = "llama-3.3-70b-versatile"
@@ -220,7 +278,7 @@ def _call_llm(prompt: str) -> tuple[dict, str]:
             logger.warning(f"[LLM] {prov} failed: {e}")
     return None, "none"
 
-def _call_llm_chat(messages: list) -> str:
+def _call_llm_chat(messages: list, max_tokens: int = 600) -> str:
     configured = os.environ.get("LLM_PROVIDER", "groq").lower().strip()
     ordered = [configured] + [p for p in PRIORITY if p != configured]
     for prov in ordered:
@@ -232,7 +290,7 @@ def _call_llm_chat(messages: list) -> str:
                 from openai import OpenAI
                 c = OpenAI(api_key=os.environ["GROQ_API_KEY"], base_url="https://api.groq.com/openai/v1")
                 r = c.chat.completions.create(model=os.environ.get("LLM_MODEL_GROQ", DEFAULT_GROQ_MODEL),
-                    messages=messages, temperature=0.7, max_tokens=600)
+                    messages=messages, temperature=0.7, max_tokens=max_tokens)
                 return r.choices[0].message.content
             elif prov == "gemini":
                 from google import genai
@@ -244,7 +302,7 @@ def _call_llm_chat(messages: list) -> str:
                 from openai import OpenAI
                 c = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
                 r = c.chat.completions.create(model=os.environ.get("LLM_MODEL_OPENAI","gpt-4o-mini"),
-                    messages=messages, temperature=0.7, max_tokens=600)
+                    messages=messages, temperature=0.7, max_tokens=max_tokens)
                 return r.choices[0].message.content
             elif prov == "anthropic":
                 import anthropic
@@ -252,7 +310,7 @@ def _call_llm_chat(messages: list) -> str:
                 chat_msgs = [m for m in messages if m["role"]!="system"]
                 c = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
                 m = c.messages.create(model=os.environ.get("LLM_MODEL_ANTHROPIC","claude-haiku-4-5-20251001"),
-                    max_tokens=600, system=sys_msg, messages=chat_msgs)
+                    max_tokens=max_tokens, system=sys_msg, messages=chat_msgs)
                 return m.content[0].text
         except Exception as e:
             logger.warning(f"[CHAT LLM] {prov} failed: {e}")
@@ -383,6 +441,16 @@ def build_export_html(dashboard: dict) -> str:
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     return f"""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>{dashboard.get('title','Dashboard')}</title><script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script><style>@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600&display=swap');*{{margin:0;padding:0;box-sizing:border-box}}body{{background:#0C162A;color:#F7F8FB;font-family:'Plus Jakarta Sans',system-ui,sans-serif;padding:32px 28px}}.kpi-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:22px}}.kpi-card{{background:#1e2b4a;border:1px solid rgba(68,104,176,0.2);border-radius:14px;padding:20px;position:relative}}.kpi-card::before{{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--kc,#4468B0);border-radius:14px 14px 0 0}}.kpi-val{{font-size:28px;font-weight:700;margin:8px 0 4px;color:#F7F8FB}}.kpi-lbl{{font-family:'Space Grotesk',sans-serif;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#92A0BA}}.chart-card{{background:#1e2b4a;border:1px solid rgba(68,104,176,0.2);border-radius:14px;padding:18px;margin-bottom:16px}}.hero-div{{height:400px;width:100%}}.sub-div{{height:300px;width:100%}}.sub-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px}}</style></head><body><h1 style="margin-bottom:8px">{dashboard.get('title','Dashboard')}</h1><p style="color:#607090;margin-bottom:24px">{dashboard.get('subtitle','')}</p><div class="kpi-grid">{kpi_html}</div>{hero_html}<div class="sub-grid">{subs_html}</div><footer style="text-align:center;padding:28px 0;font-size:10px;color:#1a2540">Generated by JMData Talent Dash · {ts}</footer><script>const F={chart_data};Object.entries(F).forEach(([id,fig])=>{{const el=document.getElementById(id);if(!el||!fig)return;const L=Object.assign({{}},fig.layout||{{}},{{autosize:true,paper_bgcolor:"rgba(0,0,0,0)",plot_bgcolor:"rgba(0,0,0,0)"}});if(fig.frames&&fig.frames.length){{Plotly.newPlot(el,fig.data||[],L,{{responsive:true}}).then(()=>Plotly.addFrames(el,fig.frames));}}else{{Plotly.newPlot(el,fig.data||[],L,{{responsive:true}});}}}});</script></body></html>"""
 
+
+class UrlIngestReq(BaseModel):
+    url: str
+
+class ImproveReq(BaseModel):
+    did: str
+    chart_id: str
+    spec: dict
+    title: str | None = None
+
 @app.api_route("/health", methods=["GET", "HEAD"])
 def health(response: Response):
     providers = {p: bool(os.environ.get(kv)) for p, (_, kv) in _CALLERS.items()}
@@ -404,7 +472,12 @@ async def upload(file: UploadFile = File(...)):
     _store(did, df, profile)
     return {"id": did, "filename": profile["filename"], "rows": profile["rows"],
             "cols": profile["cols"], "usable_cols": profile["usable_cols"],
-            "columns": profile["columns"], "preview": profile["preview"]}
+            "columns": profile["columns"], "preview": profile["preview"],
+            "landing_preview": profile.get("landing_preview", profile["preview"][:5]),
+            "data_health": profile.get("data_health", {}),
+            "outlier_cols": profile.get("outlier_cols", []),
+            "correlation":  profile.get("correlation", {}),
+            "suggested_questions": profile.get("suggested_questions", [])}
 
 class GenReq(BaseModel):
     seed: int | None = None
@@ -477,6 +550,24 @@ async def generate(dataset_id: str, body: GenReq | None = None):
                 charts.append({"id":spec.get("id","c"),"type":actual_type,"title":spec.get("title","Chart"),
                                "subtitle":spec.get("subtitle"),"span":int(spec.get("span",1)),"figure":fig,"spec":spec})
 
+    # Auto-add correlation heatmap if 3+ numeric cols and not already present
+    corr_types = {ch.get("type") for ch in charts}
+    if "heatmap" not in corr_types:
+        num_col_names = [c["name"] for c in profile["columns"] if c["semantic"] == "numeric"]
+        if len(num_col_names) >= 3:
+            # Recompute correlation on the (possibly filtered) df
+            num_df = df[[c for c in num_col_names if c in df.columns]].apply(pd.to_numeric, errors="coerce")
+            live_corr = num_df.corr().round(3).fillna(0).to_dict() if len(num_df.columns) >= 2 else {}
+            corr_fig = build_correlation_heatmap(live_corr) if live_corr else None
+            if corr_fig:
+                charts.append({
+                    "id": "corr_heatmap", "type": "heatmap",
+                    "title": "Correlation Matrix",
+                    "subtitle": f"Pearson correlation between {len(num_col_names)} numeric columns",
+                    "span": 1, "figure": corr_fig,
+                    "spec": {"type": "heatmap", "title": "Correlation Matrix"},
+                })
+
     return {
         "dataset_id": dataset_id,
         "title": plan.get("title","Dashboard"),
@@ -507,7 +598,12 @@ async def sample(name: str):
     _store(did, df, profile)
     return {"id": did, "filename": profile["filename"], "rows": profile["rows"],
             "cols": profile["cols"], "usable_cols": profile["usable_cols"],
-            "columns": profile["columns"], "preview": profile["preview"]}
+            "columns": profile["columns"], "preview": profile["preview"],
+            "landing_preview": profile.get("landing_preview", profile["preview"][:5]),
+            "data_health": profile.get("data_health", {}),
+            "outlier_cols": profile.get("outlier_cols", []),
+            "correlation":  profile.get("correlation", {}),
+            "suggested_questions": profile.get("suggested_questions", [])}
 
 class ChartUpdateReq(BaseModel):
     did: str
@@ -530,6 +626,162 @@ class ChatReq(BaseModel):
     message: str
     current_charts: list = []
     history: list = []
+
+
+@app.post("/api/ingest-url")
+async def ingest_url(req: UrlIngestReq):
+    """Fetch a CSV/Excel from a public URL and store as a dataset."""
+    url = req.url.strip()
+    if not url.startswith("http"):
+        raise HTTPException(400, "URL must start with http")
+    try:
+        resp = _requests.get(url, timeout=20, headers={"User-Agent": "JMData/1.0"})
+        resp.raise_for_status()
+    except Exception as e:
+        raise HTTPException(400, f"Could not fetch URL: {e}")
+    raw = resp.content
+    if len(raw) > 25_000_000:
+        raise HTTPException(413, "File too large (max 25 MB)")
+    filename = url.split("/")[-1].split("?")[0] or "data.csv"
+    try:
+        df = read_file(filename, raw)
+    except Exception as e:
+        raise HTTPException(400, f"Cannot parse file: {e}")
+    if df.empty:
+        raise HTTPException(400, "File is empty")
+    if len(df) > 50000:
+        df = df.head(50000)
+    profile = profile_df(df, filename)
+    did = str(uuid.uuid4())
+    _store(did, df, profile)
+    return {"id": did, "filename": profile["filename"], "rows": profile["rows"],
+            "cols": profile["cols"], "usable_cols": profile["usable_cols"],
+            "columns": profile["columns"], "preview": profile["preview"],
+            "landing_preview": profile.get("landing_preview", profile["preview"][:5]),
+            "data_health": profile.get("data_health", {}),
+            "outlier_cols": profile.get("outlier_cols", []),
+            "correlation":  profile.get("correlation", {}),
+            "suggested_questions": profile.get("suggested_questions", [])}
+
+
+IMPROVE_PROMPT = """You are a data visualization expert. A chart was generated for a dataset.
+Your job:
+1. Critique the current chart on 6 dimensions (score 1-10 each): bugs, transformation, compliance, type, encoding, aesthetics.
+2. Suggest ONE concrete improvement: e.g. better chart type, better aggregation, better column choice.
+3. Return ONLY valid JSON like this:
+{{
+  "critic": {{"bugs": 8, "transformation": 7, "compliance": 9, "type": 6, "encoding": 8, "aesthetics": 7}},
+  "improved_spec": {{"type": "bar", "x": "region", "y": "revenue", "agg": "sum", "title": "Revenue by Region", "subtitle": "Total revenue per region"}}
+}}
+
+Dataset schema:
+{schema}
+
+Current chart spec:
+{spec}
+
+Return ONLY the JSON object, nothing else."""
+
+
+@app.post("/api/chart/improve")
+async def chart_improve(req: ImproveReq):
+    """Use LLM to critique and improve a single chart."""
+    item = _get(req.did)
+    profile = item["profile"]
+    schema_lines = [f"  {c['name']} ({c['semantic']}, unique={c['n_unique']})" for c in profile["columns"]]
+    schema_str = "\n".join(schema_lines)
+
+    prompt_text = IMPROVE_PROMPT.format(
+        schema=schema_str,
+        spec=json.dumps(req.spec, indent=2)
+    )
+
+    messages = [
+        {"role": "system", "content": "You are a data visualization critic and improver. Always respond with valid JSON only."},
+        {"role": "user",   "content": prompt_text},
+    ]
+    raw = _call_llm_chat(messages)
+
+    # Parse JSON response
+    try:
+        clean = re.sub(r"```json|```", "", raw).strip()
+        result = json.loads(clean)
+    except Exception:
+        # Fallback: return same chart with no critic
+        raise HTTPException(500, "Could not parse LLM improvement response")
+
+    critic        = result.get("critic", {})
+    improved_spec = result.get("improved_spec", req.spec)
+
+    # Validate columns
+    valid_cols = {c["name"] for c in profile["columns"]}
+    refs = [improved_spec.get(k) for k in ("x","y","z","color") if improved_spec.get(k)]
+    if not all(r in valid_cols for r in refs):
+        improved_spec = req.spec   # fallback to original spec
+
+    # Build the improved figure
+    df = item["df"]
+    fig, actual_type = build_chart_with_fallback(improved_spec, df)
+    if not fig:
+        raise HTTPException(500, "Could not build improved chart")
+
+    return {
+        "type":   actual_type,
+        "figure": fig,
+        "spec":   improved_spec,
+        "title":  improved_spec.get("title", req.title),
+        "critic": critic,
+    }
+
+
+class ReportReq(BaseModel):
+    did: str
+
+@app.post("/api/report")
+async def generate_report(req: ReportReq):
+    """Generate a 3-paragraph executive summary of the dashboard using 1 LLM call."""
+    item    = _get(req.did)
+    profile = item["profile"]
+    plan    = item.get("plan", {}).get("plan", {})
+
+    kpi_lines = []
+    for k in (plan.get("kpis") or [])[:5]:
+        col = k.get("column","")
+        kpi_lines.append(f"  - {k.get('label','')}: {k.get('metric','count')} of {col}")
+
+    schema_lines = [f"  {c['name']} ({c['semantic']}, {c['n_unique']} unique)"
+                    for c in profile["columns"]]
+    health = profile.get("data_health", {})
+    outliers = profile.get("outlier_cols", [])
+
+    prompt = f"""You are an executive data analyst. Write a concise 3-paragraph report on this dataset.
+
+Dataset: {profile["filename"]} — {profile["rows"]:,} rows, {profile["usable_cols"]} columns
+Schema:
+{chr(10).join(schema_lines)}
+
+KPIs:
+{chr(10).join(kpi_lines) if kpi_lines else "  (not yet generated)"}
+
+Data Health: {health.get("duplicate_rows",0)} duplicate rows, {health.get("total_nulls",0)} total nulls
+Outlier columns: {", ".join(o["col"] for o in outliers) if outliers else "none detected"}
+
+Write exactly 3 short paragraphs:
+1. Dataset Overview — what this data represents and its key dimensions
+2. Key Findings — 2-3 specific, quantitative insights from the schema and KPIs
+3. Data Quality & Recommendations — quality observations and what analysis to do next
+
+Be specific and professional. Use actual column names. Keep each paragraph to 2-3 sentences."""
+
+    messages = [
+        {"role": "system", "content": "You are a professional data analyst writing executive reports. Be concise and specific."},
+        {"role": "user",   "content": prompt},
+    ]
+    report_text = _call_llm_chat(messages, max_tokens=1500)
+    paragraphs  = [p.strip() for p in report_text.strip().split("
+
+") if p.strip()]
+    return {"report": report_text, "paragraphs": paragraphs[:3]}
 
 @app.post("/api/chat")
 async def chat(req: ChatReq):

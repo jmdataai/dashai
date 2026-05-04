@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import useStore from '../store';
-import { apiUpload, apiSample, apiGenerate, apiHealth } from '../api';
+import { apiUpload, apiSample, apiGenerate, apiHealth, apiIngestUrl } from '../api';
 import { toast } from '../toast';
 
 /* ── JM Brand Mark SVG (blue version) ── */
@@ -21,13 +21,15 @@ function JMLogo({ size = 20 }) {
 }
 
 export default function Landing() {
-  const { toggleTheme, theme, setDid, setDash, setProfile, setFile, goToDashboard, setGenerating } = useStore();
+  const { toggleTheme, theme, setDid, setDash, setProfile, setFile, goToDashboard, setGenerating, setSuggestedQuestions } = useStore();
   const [status, setStatus]     = useState({ dot: '', text: 'Connecting…' });
   const [fileData, setFileData] = useState(null);
   const [chips, setChips]       = useState([]);
   const [stMsg, setStMsg]       = useState('');
   const [err, setErr]           = useState('');
   const [over, setOver]         = useState(false);
+  const [urlInput, setUrlInput]  = useState('');
+  const [urlLoading, setUrlLoading] = useState(false);
   const [generating, setLocalGen] = useState(false);
   const fileRef  = useRef(null);
   const genTimer = useRef(null);
@@ -52,6 +54,7 @@ export default function Landing() {
       setFileData(data); setChips(data.columns || []);
       setStMsg('');
       setDid(data.id); setProfile(data); setFile(data.filename);
+      if (data.suggested_questions?.length) setSuggestedQuestions(data.suggested_questions);
       await doGenerate(data.id, data);
     } catch (e) { setStMsg(''); setErr(e.message); }
   }, []);
@@ -94,9 +97,24 @@ export default function Landing() {
       const data = await apiSample('sales');
       setFileData(data); setChips(data.columns || []);
       setDid(data.id); setProfile(data); setFile(data.filename);
+      if (data.suggested_questions?.length) setSuggestedQuestions(data.suggested_questions);
       setStMsg('');
       await doGenerate(data.id, data);
     } catch (e) { setStMsg(''); setErr(e.message); }
+  };
+
+  const loadFromUrl = async () => {
+    const u = urlInput.trim();
+    if (!u) return;
+    setUrlLoading(true); setErr(''); setStMsg('Fetching data from URL…');
+    try {
+      const data = await apiIngestUrl(u);
+      setFileData(data); setChips(data.columns || []);
+      setDid(data.id); setProfile(data); setFile(data.filename);
+      setStMsg('');
+      await doGenerate(data.id);
+    } catch (e) { setStMsg(''); setErr('URL fetch failed: ' + e.message); }
+    finally { setUrlLoading(false); }
   };
 
   const onDrop = (e) => { e.preventDefault(); setOver(false); e.dataTransfer.files[0] && handleFile(e.dataTransfer.files[0]); };
@@ -188,6 +206,25 @@ export default function Landing() {
               </div>
             )}
 
+            {/* Data preview — first 5 rows */}
+            {fileData?.landing_preview?.length > 0 || fileData?.preview?.length > 0 && !generating && (
+              <div className="preview-table-wrap">
+                <div className="preview-label">Preview — first {fileData.preview.length} rows</div>
+                <div className="preview-scroll">
+                  <table className="preview-table">
+                    <thead>
+                      <tr>{Object.keys((fileData.landing_preview || fileData.preview || [{}])[0] || {}).slice(0,6).map(h => <th key={h}>{h}</th>)}</tr>
+                    </thead>
+                    <tbody>
+                      {(fileData.landing_preview || fileData.preview || []).slice(0,5).map((row, i) => (
+                        <tr key={i}>{Object.keys((fileData.landing_preview || fileData.preview || [{}])[0] || {}).slice(0,6).map(h => <td key={h}>{row[h]}</td>)}</tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {stMsg && <div className="st-row show"><div className="spin" /><span>{stMsg}</span></div>}
             {err   && <div className="err-msg show">⚠ {err}</div>}
 
@@ -202,6 +239,27 @@ export default function Landing() {
               <div className="drop-label">Drop CSV or Excel file</div>
               <div className="drop-hint">.csv · .xlsx · .xls · up to 25 MB</div>
             </label>
+
+            <div className="sep"><span>or paste a CSV URL</span></div>
+
+            <div className="url-ingest-row">
+              <input
+                className="url-ingest-input"
+                type="text"
+                placeholder="https://raw.githubusercontent.com/…/data.csv"
+                value={urlInput}
+                onChange={e => setUrlInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && loadFromUrl()}
+                disabled={generating || urlLoading}
+              />
+              <button
+                className="url-ingest-btn"
+                onClick={loadFromUrl}
+                disabled={generating || urlLoading || !urlInput.trim()}
+              >
+                {urlLoading ? '…' : '→'}
+              </button>
+            </div>
 
             <div className="sep"><span>or</span></div>
 

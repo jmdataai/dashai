@@ -12,8 +12,9 @@ import Charts    from './tabs/Charts';
 import Insights  from './tabs/Insights';
 import Stats     from './tabs/Stats';
 import Data      from './tabs/Data';
+import Compare   from './tabs/Compare';
 
-const TABS = { overview: Overview, charts: Charts, insights: Insights, stats: Stats, data: Data };
+const TABS = { overview: Overview, charts: Charts, insights: Insights, stats: Stats, data: Data, compare: Compare };
 
 export default function Dashboard() {
   const { activeTab, did, setDash, setGenerating, dash, filterLoading, filter } = useStore();
@@ -58,11 +59,19 @@ export default function Dashboard() {
     setTimeout(() => setLocalGen(false), 300);
   };
 
+  // Use ref so event listener always sees latest did without re-registering
+  const didRef = React.useRef(did);
+  React.useEffect(() => { didRef.current = did; }, [did]);
+
   useEffect(() => {
-    const handler = () => doRegenerate();
+    const handler = () => {
+      const currentDid = didRef.current;
+      if (!currentDid) return;
+      doRegenerate();
+    };
     window.addEventListener('dashai:regenerate', handler);
     return () => window.removeEventListener('dashai:regenerate', handler);
-  }, [did]);
+  }, []);
 
   return (
     <div className="dash-root">

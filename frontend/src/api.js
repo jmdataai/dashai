@@ -14,23 +14,28 @@ export async function apiUpload(file) {
   return r.json();
 }
 
+export async function apiIngestUrl(url) {
+  const r = await fetch(`${API}/api/ingest-url`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }), signal: timeout(30000),
+  });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail || 'URL fetch failed'); }
+  return r.json();
+}
+
 export async function apiSample(name = 'sales') {
   const r = await fetch(`${API}/api/sample/${name}`, { method: 'POST', signal: timeout(30000) });
   if (!r.ok) throw new Error('Sample load failed');
   return r.json();
 }
 
-// forceFresh=true  → Regenerate button  → calls LLM
-// forceFresh=false → filter apply/clear  → reuses stored plan, zero LLM calls
 export async function apiGenerate(did, filterCol = null, filterVal = null, forceFresh = false) {
   const body = {};
   if (filterCol && filterVal) { body.filter_col = filterCol; body.filter_val = filterVal; }
   if (forceFresh) body.force_fresh = true;
   const r = await fetch(`${API}/api/generate/${did}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: timeout(90000),
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body), signal: timeout(90000),
   });
   if (!r.ok) throw new Error('Generation failed: ' + r.status);
   return r.json();
@@ -42,6 +47,16 @@ export async function apiChartUpdate(did, spec) {
     body: JSON.stringify({ did, spec }), signal: timeout(30000),
   });
   if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail || 'Update failed'); }
+  return r.json();
+}
+
+export async function apiImproveChart(did, chart) {
+  const r = await fetch(`${API}/api/chart/improve`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ did, chart_id: chart.id, spec: chart.spec, title: chart.title }),
+    signal: timeout(60000),
+  });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail || 'Improve failed'); }
   return r.json();
 }
 
@@ -66,4 +81,13 @@ export async function apiExportHtml(dashboard) {
   });
   if (!r.ok) throw new Error('Export failed');
   return r.blob();
+}
+
+export async function apiReport(did) {
+  const r = await fetch(`${API}/api/report`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ did }), signal: timeout(45000),
+  });
+  if (!r.ok) throw new Error('Report generation failed');
+  return r.json();
 }

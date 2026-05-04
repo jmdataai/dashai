@@ -4,41 +4,49 @@ import { apiChat, apiChartUpdate } from '../api';
 import { toast } from '../toast';
 
 export default function ChatPanel() {
-  const { chatOpen, toggleChat, chatHistory, addChatMessage, dash, did, profile, updateChart, addChart } = useStore();
-  const [input, setInput]     = useState('');
+  const {
+    chatOpen, toggleChat, chatHistory, addChatMessage,
+    dash, did, profile, updateChart, addChart,
+    suggestedQuestions,
+  } = useStore();
+
+  const [input,    setInput]    = useState('');
   const [thinking, setThinking] = useState(false);
   const messagesRef = useRef(null);
   const inputRef    = useRef(null);
 
   const cols    = profile?.columns || [];
-  const numCols = cols.filter(c => c.semantic === 'numeric').slice(0, 2);
-  const catCols = cols.filter(c => c.semantic === 'categorical').slice(0, 1);
-  const suggestions = [
-    numCols[0] ? `What's the average ${numCols[0].name}?` : null,
-    (catCols[0] && numCols[0]) ? `Change hero chart to bar, x=${catCols[0].name}` : null,
-    'What are the key insights from this data?',
-    'Add a scatter chart',
-  ].filter(Boolean);
+  const numCols = cols.filter(c => c.semantic === 'numeric');
+  const catCols = cols.filter(c => c.semantic === 'categorical');
+
+  // Contextual chips — blend suggested questions from backend + dynamic ones
+  const chips = [
+    ...(suggestedQuestions || []).slice(0, 3),
+    numCols[0] && catCols[0]
+      ? `Show ${numCols[0].name} by ${catCols[0].name} as bar chart`
+      : null,
+    'What are the key trends in this data?',
+    'Add a correlation scatter chart',
+  ].filter(Boolean).slice(0, 5);
 
   useEffect(() => { if (chatOpen) inputRef.current?.focus(); }, [chatOpen]);
   useEffect(() => {
     if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
   }, [chatHistory, thinking]);
 
-  // Append error as chat bubble (persistent) + toast (immediate)
   const chatError = (msg) => {
     addChatMessage({ role: 'assistant', content: `⚠ ${msg}`, isError: true });
     toast.error(msg, 4000);
   };
 
-  const send = async () => {
-    const msg = input.trim();
-    if (!msg || !did || thinking) return;
+  const send = async (msg) => {
+    const text = (msg || input).trim();
+    if (!text || !did || thinking) return;
     setInput('');
-    addChatMessage({ role: 'user', content: msg });
+    addChatMessage({ role: 'user', content: text });
     setThinking(true);
     try {
-      const data = await apiChat(did, msg, dash?.charts || [], chatHistory);
+      const data = await apiChat(did, text, dash?.charts || [], chatHistory);
       addChatMessage({ role: 'assistant', content: data.reply });
       if (data.actions?.length) {
         for (const action of data.actions) await processAction(action);
@@ -52,67 +60,44 @@ export default function ChatPanel() {
 
   const processAction = async (action) => {
     const charts = dash?.charts || [];
-
     if (action.type === 'update_chart') {
       const idx = charts.findIndex(c => c.id === action.chart_id);
       if (idx < 0) {
-        // BUG 1 FIX: chart_id not found → persistent error in chat
-        const ids = charts.map(c => c.id).join(', ');
-        chatError(`Chart "${action.chart_id}" not found. Available chart IDs: ${ids}`);
+        chatError(`Chart "${action.chart_id}" not found. IDs: ${charts.map(c => c.id).join(', ')}`);
         return;
       }
       try {
-        // Merge: keep existing spec, overlay only what LLM specified
         const spec = Object.assign({}, charts[idx].spec || {}, action.spec || {});
         const data = await apiChartUpdate(did, spec);
-        updateChart(idx, {
-          type:   data.type,
-          figure: data.figure,
-          spec:   data.spec,
-          title:  spec.title || charts[idx].title,
-        });
-        toast.success(`Chart "${charts[idx].title}" updated!`);
+        updateChart(idx, { type: data.type, figure: data.figure, spec: data.spec, title: spec.title || charts[idx].title });
+        toast.success(`Updated "${charts[idx].title}"`);
       } catch (e) {
-        // BUG 2 FIX: backend 400 (bad column) → persistent error in chat
-        const errMsg = e.message.includes('Unknown columns')
-          ? `${e.message}. Valid columns: ${cols.map(c => c.name).join(', ')}`
-          : `Could not update chart: ${e.message}`;
-        chatError(errMsg);
+        chatError(`Could not update chart: ${e.message}`);
       }
-
     } else if (action.type === 'add_chart') {
       const spec = Object.assign({ id: `ai-${Date.now()}`, span: 1 }, action.spec || {});
       try {
         const data = await apiChartUpdate(did, spec);
-        addChart({
-          id:       spec.id,
-          type:     data.type,
-          title:    spec.title || 'AI Chart',
-          subtitle: null,
-          span:     spec.span,
-          figure:   data.figure,
-          spec:     data.spec,
-        });
+        addChart({ id: spec.id, type: data.type, title: spec.title || 'AI Chart',
+                   subtitle: null, span: spec.span, figure: data.figure, spec: data.spec });
         toast.success('New chart added!');
       } catch (e) {
-        const errMsg = e.message.includes('Unknown columns')
-          ? `${e.message}. Valid columns: ${cols.map(c => c.name).join(', ')}`
-          : `Could not add chart: ${e.message}`;
-        chatError(errMsg);
+        chatError(`Could not add chart: ${e.message}`);
       }
     }
   };
 
   const allMessages = [
-    { role: 'assistant', content: 'Hi! Ask me about your data, or say things like "change hero to line chart" or "add a scatter of units vs revenue".' },
+    { role: 'assistant', content: 'Hi! Ask me about your data, or try one of the suggestions below.' },
     ...chatHistory,
   ];
 
   return (
     <>
-      <button className="chat-bubble" onClick={toggleChat}>
+      <button className="chat-bubble" onClick={toggleChat} title="Ask AI (Ctrl+/)">
         <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-          <path d="M4 4h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H7l-4 3V5a1 1 0 0 1 1-1z" stroke="white" strokeWidth="1.6" strokeLinejoin="round"/>
+          <path d="M4 4h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H7l-4 3V5a1 1 0 0 1 1-1z"
+            stroke="white" strokeWidth="1.6" strokeLinejoin="round"/>
           <path d="M7 8h8M7 11h5" stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
         </svg>
       </button>
@@ -126,22 +111,25 @@ export default function ChatPanel() {
         <div className="cp-messages" ref={messagesRef}>
           {allMessages.map((m, i) => (
             <div key={i} className={`cp-msg ${m.role}`}>
-              <div className={`cp-bubble${m.isError ? ' cp-error' : ''}`}>
-                {m.content}
-              </div>
+              <div className={`cp-bubble${m.isError ? ' cp-error' : ''}`}>{m.content}</div>
             </div>
           ))}
           {thinking && (
             <div className="cp-msg assistant">
-              <div className="cp-bubble cp-thinking">Thinking…</div>
+              <div className="cp-bubble cp-thinking">
+                <span className="spin" style={{width:10,height:10,display:'inline-block',marginRight:6}} />
+                Thinking…
+              </div>
             </div>
           )}
         </div>
 
-        {chatHistory.length === 0 && (
+        {/* Contextual suggestions — always visible, not just empty */}
+        {chips.length > 0 && chatHistory.length < 3 && (
           <div className="cp-suggestions">
-            {suggestions.map(s => (
-              <button key={s} className="cp-chip" onClick={() => setInput(s)}>{s}</button>
+            <div className="cp-suggestions-label">Try asking:</div>
+            {chips.map(s => (
+              <button key={s} className="cp-chip" onClick={() => send(s)}>{s}</button>
             ))}
           </div>
         )}
@@ -153,10 +141,10 @@ export default function ChatPanel() {
             rows={2}
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder="e.g. Change hero to line chart, use date as x-axis…"
+            placeholder="e.g. Show revenue by region as a bar chart…"
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
           />
-          <button className="cp-send" onClick={send} disabled={thinking}>▶</button>
+          <button className="cp-send" onClick={() => send()} disabled={thinking}>▶</button>
         </div>
       </div>
     </>

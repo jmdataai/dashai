@@ -250,7 +250,13 @@ def _scatter(df, x, y, color):
     if not _has(df, x, y): return None
     sub = df.dropna(subset=[x, y]).head(3000)
     col_arg = color if color and color in sub.columns else None
-    fig = px.scatter(sub, x=x, y=y, color=col_arg, color_discrete_sequence=PALETTE)
+    both_numeric = pd.api.types.is_numeric_dtype(sub[x]) and pd.api.types.is_numeric_dtype(sub[y])
+    try:
+        fig = px.scatter(sub, x=x, y=y, color=col_arg, color_discrete_sequence=PALETTE,
+                         trendline="lowess" if both_numeric else None,
+                         trendline_color_override="#f59e0b")
+    except Exception:
+        fig = px.scatter(sub, x=x, y=y, color=col_arg, color_discrete_sequence=PALETTE)
     fig.update_traces(marker=dict(opacity=0.7, size=6, line=dict(width=0)))
     return _to_dict(_style(fig))
 
@@ -305,6 +311,35 @@ def _heatmap(df, x, y, z, agg):
         hoverongaps=False,
     ))
     return _to_dict(_style(fig))
+
+
+
+def build_correlation_heatmap(correlation: dict) -> dict | None:
+    """Build a Plotly correlation heatmap from a correlation dict {col: {col: value}}."""
+    if not correlation or len(correlation) < 2:
+        return None
+    try:
+        cols = list(correlation.keys())
+        z    = [[correlation[r].get(c, 0) for c in cols] for r in cols]
+        fig  = go.Figure(data=go.Heatmap(
+            z=z, x=cols, y=cols,
+            colorscale=[
+                [0,   "#ef4444"],
+                [0.5, "#141B34"],
+                [1,   "#4468B0"],
+            ],
+            zmid=0, zmin=-1, zmax=1,
+            text=[[f"{v:.2f}" for v in row] for row in z],
+            texttemplate="%{text}",
+            textfont=dict(size=9, family="Space Grotesk, sans-serif"),
+            hoverongaps=False,
+            hovertemplate="<b>%{x}</b> vs <b>%{y}</b><br>r = %{z:.3f}<extra></extra>",
+        ))
+        fig.update_layout(**DARK_LAYOUT)
+        fig.update_layout(margin=dict(l=120, r=24, t=38, b=100))
+        return _to_dict(fig)
+    except Exception:
+        return None
 
 
 def _treemap(df, x, y, agg):
