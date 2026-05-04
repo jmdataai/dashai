@@ -12,8 +12,8 @@ export default function App() {
     document.body.classList.toggle('light', theme === 'light');
   }, [theme]);
 
-  // Hydration guard — if we restored a dashboard page from localStorage
-  // but the dash data is missing, fall back gracefully
+  // Hydration guard — if session storage restored the dashboard shell
+  // but the generated chart payload is missing, fall back gracefully
   useEffect(() => {
     if (page === 'dashboard' && !dash) {
       goToLanding();

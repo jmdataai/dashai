@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 const useStore = create(
   persist(
@@ -20,7 +20,7 @@ const useStore = create(
       generating: false,
       filterLoading: false,
 
-      // Edit / Fullscreen (transient — not persisted)
+      // Edit / Fullscreen (transient - not persisted)
       editIdx: null,
       fullscreenIdx: null,
 
@@ -102,20 +102,22 @@ const useStore = create(
       }),
     }),
     {
-      name: 'jmdata-talent-dash',   // localStorage key
-      // Only persist these — skip transient UI state
+      name: 'jmdata-talent-dash',
+      storage: createJSONStorage(() => sessionStorage),
+      // Only persist these - skip transient UI state.
       partialize: (s) => ({
         page:            s.page,
         did:             s.did,
-        // dash & compareDash intentionally excluded — Plotly figure JSONs are too large for localStorage
-        // On refresh, App.jsx detects missing dash and redirects to landing gracefully
+        // Persist the generated dashboard in the current tab so refresh restores it.
+        // sessionStorage clears on tab close, so a fresh tab still starts at landing.
+        dash:            s.dash,
         profile:         s.profile,
         file:            s.file,
         activeTab:       s.activeTab,
         theme:           s.theme,
         sidebarCollapsed:s.sidebarCollapsed,
         filter:          s.filter,
-        // Cap chat history at last 20 messages to prevent localStorage growth
+        // Cap chat history at last 20 messages to prevent sessionStorage growth.
         chatHistory:     s.chatHistory.slice(-20),
         compareDid:      s.compareDid,
         compareFile:     s.compareFile,
