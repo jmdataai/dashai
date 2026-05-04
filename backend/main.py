@@ -778,9 +778,7 @@ Be specific and professional. Use actual column names. Keep each paragraph to 2-
         {"role": "user",   "content": prompt},
     ]
     report_text = _call_llm_chat(messages, max_tokens=1500)
-    paragraphs  = [p.strip() for p in report_text.strip().split("
-
-") if p.strip()]
+    paragraphs  = [p.strip() for p in report_text.strip().split("\n\n") if p.strip()]
     return {"report": report_text, "paragraphs": paragraphs[:3]}
 
 @app.post("/api/chat")
